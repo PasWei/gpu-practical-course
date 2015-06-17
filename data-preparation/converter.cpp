@@ -3,56 +3,84 @@
 #include <algorithm>
 #include <tclap/CmdLine.h>
 
+//command description
+	//the description of this command
+	#define COMMAND_DESC "Command for converting MNIST IDX data to readable xml data"
+
+	//the version string of this command
+	#define VERSION_STRING "0.999"
+
+//parameter for input data file
+	//the short arg name
+	#define INPUT_DATA_SHORT_ARG "i"
+
+	//long arg name
+	#define INPUT_DATA_LONG_ARG "input-data"
+
+	//description
+	#define INPUT_DATA_DESC "location of the file containing the image data for training or testing"
+
+	//description of the expected format
+	#define INPUT_DATA_TYPE_DESC "file system path to the MNIST image data set"
+
+//parameter for input label file
+	//the short arg name
+	#define INPUT_LABEL_SHORT_ARG "l"
+
+	//long arg name
+	#define INPUT_LABEL_LONG_ARG "input-label"
+
+	//description
+	#define INPUT_LABEL_DESC "location of the file containing the label data for training or testing"
+
+	//description of the expected format
+	#define INPUT_LABEL_TYPE_DESC "file system path to the MNIST label data set"
+
 int main(int argc, char** argv)
 {
+	//initialize cmd line parsing
+	TCLAP::CmdLine cmd(COMMAND_DESC, ' ', VERSION_STRING);
 
-	// Wrap everything in a try block.  Do this every time, 
-	// because exceptions will be thrown for problems.
-	try {  
+	//argument for specification of the training data file
+	TCLAP::ValueArg<std::string> inputDataArg(
+		INPUT_DATA_SHORT_ARG,
+		INPUT_DATA_LONG_ARG,
+		INPUT_DATA_DESC,
+		true, //required argument
+		"", //default value
+		INPUT_DATA_TYPE_DESC);
 
-	// Define the command line object, and insert a message
-	// that describes the program. The "Command description message" 
-	// is printed last in the help text. The second argument is the 
-	// delimiter (usually space) and the last one is the version number. 
-	// The CmdLine object parses the argv array based on the Arg objects
-	// that it contains. 
-	TCLAP::CmdLine cmd("Command description message", ' ', "0.9");
+	cmd.add( inputDataArg );
 
-	// Define a value argument and add it to the command line.
-	// A value arg defines a flag and a type of value that it expects,
-	// such as "-n Bishop".
-	TCLAP::ValueArg<std::string> nameArg("n","name","Name to print",true,"homer","string");
+	//argument for specification of the training data file
+	TCLAP::ValueArg<std::string> inputLabelArg(
+		INPUT_LABEL_SHORT_ARG,
+		INPUT_LABEL_LONG_ARG,
+		INPUT_LABEL_DESC,
+		true, //required argument
+		"", //default value
+		INPUT_LABEL_TYPE_DESC);
 
-	// Add the argument nameArg to the CmdLine object. The CmdLine object
-	// uses this Arg to parse the command line.
-	cmd.add( nameArg );
-
-	// Define a switch and add it to the command line.
-	// A switch arg is a boolean argument and only defines a flag that
-	// indicates true or false.  In this example the SwitchArg adds itself
-	// to the CmdLine object as part of the constructor.  This eliminates
-	// the need to call the cmd.add() method.  All args have support in
-	// their constructors to add themselves directly to the CmdLine object.
-	// It doesn't matter which idiom you choose, they accomplish the same thing.
-	TCLAP::SwitchArg reverseSwitch("r","reverse","Print name backwards", cmd, false);
+	cmd.add( inputLabelArg );
 
 	// Parse the argv array.
-	cmd.parse( argc, argv );
-
-	// Get the value parsed by each arg. 
-	std::string name = nameArg.getValue();
-	bool reverseName = reverseSwitch.getValue();
-
-	// Do what you intend. 
-	if ( reverseName )
-	{
-		std::reverse(name.begin(),name.end());
-		std::cout << "My name (spelled backwards) is: " << name << std::endl;
+	try {  
+		cmd.parse( argc, argv );
 	}
-	else
-		std::cout << "My name is: " << name << std::endl;
+	catch (TCLAP::ArgException &e) { // catch any exceptions
+		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+	}
+
+	// Get the input data value
+	std::string inputDataFilepath = inputDataArg.getValue();
+
+	// Get the input label value
+	std::string inputLabelFilepath = inputLabelArg.getValue();
+
+	//try 
+
+	std::cout << "the data filename is: " << inputDataFilepath << " the label filename is: " << inputLabelFilepath << std::endl;
 
 
-	} catch (TCLAP::ArgException &e)  // catch any exceptions
-	{ std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; }
+
 }
