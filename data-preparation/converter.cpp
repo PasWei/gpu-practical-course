@@ -1,6 +1,10 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <iterator>
+#include <vector>
+
 #include <tclap/CmdLine.h>
 
 //command description
@@ -77,7 +81,15 @@ int main(int argc, char** argv)
 	// Get the input label value
 	std::string inputLabelFilepath = inputLabelArg.getValue();
 
-	//try 
+	//try
+	std::ifstream input(inputDataFilepath, std::ios::binary);
+
+	if(!input.is_open()) {
+		std::cout << "data file " << inputDataFilepath << " was not found!" << std::endl;
+		exit(1);
+	}
+
+	std::vector<char> buffer((std::istreambuf_iterator<char>(input)), (std::istreambuf_iterator<char>()));
 
 	std::cout << "the data filename is: " << inputDataFilepath << " the label filename is: " << inputLabelFilepath << std::endl;
 
