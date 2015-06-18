@@ -1,8 +1,8 @@
-SOURCE_FILES=converter.cpp
-COMPILER_ARGS=-std=c++11 -Wall -B ./
-OUTPUT_NAME=converter
+SOURCE_FILES=assignment.cpp assignment.h tgawriter.cpp tgawriter.h
+COMPILER_ARGS=-std=c++11 -Wall -B ./ 
+OUTPUT_NAME=assignment
 
-$(OUTPUT_NAME): ./include/tclap/CmdLine.h $(SOURCE_FILES)
+$(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES)
 
 # downloads TCLAP and puts the files in directory "include/tclap"
@@ -14,7 +14,8 @@ $(OUTPUT_NAME): ./include/tclap/CmdLine.h $(SOURCE_FILES)
 	cp -r tclap-1.2.1/include/tclap include/tclap
 	rm tclap-1.2.1.tar.gz
 	rm -r tclap-1.2.1
-	
+
+# downloads the MNIST data set and puts the files in directory "data"
 ./data/train-images-idx3-ubyte:
 	wget -q http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
 	gunzip train-images-idx3-ubyte.gz

@@ -6,39 +6,9 @@
 #include <vector>
 
 #include <tclap/CmdLine.h>
+#include "tgawriter.h"
 
-//command description
-	//the description of this command
-	#define COMMAND_DESC "Command for converting MNIST IDX data to readable xml data"
-
-	//the version string of this command
-	#define VERSION_STRING "0.999"
-
-//parameter for input data file
-	//the short arg name
-	#define INPUT_DATA_SHORT_ARG "i"
-
-	//long arg name
-	#define INPUT_DATA_LONG_ARG "input-data"
-
-	//description
-	#define INPUT_DATA_DESC "location of the file containing the image data for training or testing"
-
-	//description of the expected format
-	#define INPUT_DATA_TYPE_DESC "file system path to the MNIST image data set"
-
-//parameter for input label file
-	//the short arg name
-	#define INPUT_LABEL_SHORT_ARG "l"
-
-	//long arg name
-	#define INPUT_LABEL_LONG_ARG "input-label"
-
-	//description
-	#define INPUT_LABEL_DESC "location of the file containing the label data for training or testing"
-
-	//description of the expected format
-	#define INPUT_LABEL_TYPE_DESC "file system path to the MNIST label data set"
+#include "assignment.h"
 
 int main(int argc, char** argv)
 {
@@ -106,6 +76,20 @@ int main(int argc, char** argv)
 	
 	int dataType = data[2];
 
-	std::cout << "the data filename is: " << inputDataFilepath << std::endl << " the label filename is: " << inputLabelFilepath << std::endl << " buffer size " << data.size() << std::endl << " data type is: " << dataType << std::endl;
+	std::cout << "the data filename is: " << inputDataFilepath <<
+	std::endl << " the label filename is: " << inputLabelFilepath <<
+	std::endl << " buffer size " << data.size() << std::endl <<
+	" data type is: " << dataType << std::endl;
+	
+	/*for (int j = 0; j < 19; j++) {
+		RGB_t img[28*28];
 
+		for (unsigned int i = 0; i < 28*28; i++) {
+			img[i].red = data[i+16 + j*28*28];
+			img[i].green = data[i+16 + j*28*28];
+			img[i].blue = data[i+16 + j*28*28];
+		}
+
+		write_truecolor_tga("out.tga", img, 28, 28);
+	}*/
 }
