@@ -82,17 +82,30 @@ int main(int argc, char** argv)
 	std::string inputLabelFilepath = inputLabelArg.getValue();
 
 	//try
-	std::ifstream input(inputDataFilepath, std::ios::binary);
+	std::ifstream inputData(inputDataFilepath, std::ios::binary);
+	std::ifstream inputLabels(inputLabelFilepath, std::ios::binary);
 
-	if(!input.is_open()) {
+	//see if the file was opened, exit with error otherwise
+	if(!inputData.is_open()) {
 		std::cout << "data file " << inputDataFilepath << " was not found!" << std::endl;
 		exit(1);
 	}
 
-	std::vector<char> buffer((std::istreambuf_iterator<char>(input)), (std::istreambuf_iterator<char>()));
+	if(!inputLabels.is_open()) {
+		std::cout << "label file " << inputDataFilepath << " was not found!" << std::endl;
+		exit(1);
+	}
 
-	std::cout << "the data filename is: " << inputDataFilepath << " the label filename is: " << inputLabelFilepath << std::endl;
+	//copy the data into buffers
+	std::vector<char> data(
+		(std::istreambuf_iterator<char>(inputData)),
+		(std::istreambuf_iterator<char>()));
+	std::vector<char> label(
+		(std::istreambuf_iterator<char>(inputLabels)),
+		(std::istreambuf_iterator<char>()));
+	
+	int dataType = data[2];
 
-
+	std::cout << "the data filename is: " << inputDataFilepath << std::endl << " the label filename is: " << inputLabelFilepath << std::endl << " buffer size " << data.size() << std::endl << " data type is: " << dataType << std::endl;
 
 }
