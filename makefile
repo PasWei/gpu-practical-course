@@ -1,5 +1,5 @@
-SOURCE_FILES=assignment.cpp assignment.h tgawriter.cpp tgawriter.h
-COMPILER_ARGS=-std=c++11 -Wall -B ./ 
+SOURCE_FILES=assignment.cpp assignment.h ./include/tgawriter/tgawriter.h ./include/tgawriter/tgawriter.cpp
+COMPILER_ARGS=-std=c++11 -Wall -B ./
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
@@ -40,9 +40,10 @@ $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 	mkdir -p data
 	mv t10k-labels-idx1-ubyte ./data
 
+#always execute clean
 .PHONY: clean
 
 clean:
 	rm -f $(OUTPUT_NAME)
-	rm -rf include
+	rm -rf include/tclap
 	rm -rf data

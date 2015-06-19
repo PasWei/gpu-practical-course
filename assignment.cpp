@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <tclap/CmdLine.h>
-#include "tgawriter.h"
+#include "./include/tgawriter/tgawriter.h"
 
 #include "assignment.h"
 
@@ -81,8 +81,8 @@ int main(int argc, char** argv)
 	std::endl << " buffer size " << data.size() << std::endl <<
 	" data type is: " << dataType << std::endl;
 	
-	/*for (int j = 0; j < 19; j++) {
-		RGB_t img[28*28];
+	for (int j = 0; j < 19; j++) {
+		tgawriter::RGB_t img[28*28];
 
 		for (unsigned int i = 0; i < 28*28; i++) {
 			img[i].red = data[i+16 + j*28*28];
@@ -90,6 +90,8 @@ int main(int argc, char** argv)
 			img[i].blue = data[i+16 + j*28*28];
 		}
 
-		write_truecolor_tga("out.tga", img, 28, 28);
-	}*/
+		std::string outname = "out.tga" + std::to_string(j);
+
+		tgawriter::write_truecolor_tga(outname , img, 28, 28);
+	}
 }
