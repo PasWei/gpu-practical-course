@@ -8,6 +8,25 @@
 
 Assignment::Assignment(int argc, char** argv) {
 
+	this->h_trainingImageBuffer = NULL;
+	this->h_trainingLabelBuffer = NULL;
+
+	parseCMDArgs(argc, argv);
+
+	std::cout << "the data filename is: " << this->h_trainingDataPath <<
+	std::endl << "the label filename is: " << this->h_trainingLabelPath <<
+	std::endl;
+
+	this->h_trainingImageBuffer = parseFileToBuffer(this->h_trainingDataPath);
+	this->h_trainingLabelBuffer = parseFileToBuffer(this->h_trainingLabelPath);
+
+	
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// This function parses all the cmd arguments into member variables for later use 
+/////////////////////////////////////////////////////////////////////////////////
+void Assignment::parseCMDArgs(int argc, char** argv) {
 	//initialize cmd line parsing
 	TCLAP::CmdLine cmd(COMMAND_DESC, ' ', VERSION_STRING);
 
@@ -16,8 +35,8 @@ Assignment::Assignment(int argc, char** argv) {
 		INPUT_DATA_SHORT_ARG,
 		INPUT_DATA_LONG_ARG,
 		INPUT_DATA_DESC,
-		true, //required argument
-		"", //default value
+		false, //required argument
+		INPUT_DATA_DEFAULT_PATH, //default value
 		INPUT_DATA_TYPE_DESC);
 
 	cmd.add( inputDataArg );
@@ -27,8 +46,8 @@ Assignment::Assignment(int argc, char** argv) {
 		INPUT_LABEL_SHORT_ARG,
 		INPUT_LABEL_LONG_ARG,
 		INPUT_LABEL_DESC,
-		true, //required argument
-		"", //default value
+		false, //required argument
+		INPUT_LABEL_DEFAULT_PATH, //default value
 		INPUT_LABEL_TYPE_DESC);
 
 	cmd.add( inputLabelArg );
@@ -42,17 +61,66 @@ Assignment::Assignment(int argc, char** argv) {
 	}
 
 	// Get the input data value
-	std::string inputDataFilepath = inputDataArg.getValue();
+	this->h_trainingDataPath = inputDataArg.getValue();
 
 	// Get the input label value
-	std::string inputLabelFilepath = inputLabelArg.getValue();
-	
-	std::cout << "the data filename is: " << inputDataFilepath <<
-	std::endl << "the label filename is: " << inputLabelFilepath <<
-	std::endl;
+	this->h_trainingLabelPath = inputLabelArg.getValue();
 }
 
-Assignment::~Assignment() {}
+/////////////////////////////////////////////////////////////////////////////////////////
+// this function loads a binary file into abuffer
+// filePath: the path to the file to be loaded
+// return: Pointer to a binary array. The array is allocated with new and has to be freed
+/////////////////////////////////////////////////////////////////////////////////////////
+uint8_t* Assignment::parseFileToBuffer(std::string filePath) {
+
+	std::ifstream is (filePath, std::ifstream::binary);
+
+	//check if the file is valid
+  	if (is) {
+		// get length of file:
+		is.seekg (0, is.end);
+		int length = is.tellg();
+		is.seekg (0, is.beg);
+
+		uint8_t* buffer = new uint8_t[length];
+
+		//std::cout << "Reading " << length << " characters... ";
+		// read data as a block:
+		is.read ((char*)buffer,length);
+
+		//check if all input was read
+		if (!is) {
+			std::cout << "error: only " << is.gcount() << " could be read from " << filePath << std::endl;
+			delete[] buffer;
+			return NULL;
+		}
+
+		//close
+		is.close();
+
+		return buffer;
+
+	//not a valid file
+	} else {
+		std::cout << "cound not load file " << filePath << std::endl;
+		return NULL;
+	}
+}
+
+////////////////////////////////////////////////////////////////
+// Destructor
+///////////////////////////////////////////////////////////////
+Assignment::~Assignment() {
+	if (this->h_trainingImageBuffer != NULL) {	
+		delete[] this->h_trainingImageBuffer;
+		this->h_trainingImageBuffer = NULL;
+	}
+	if (this->h_trainingLabelBuffer != NULL) {	
+		delete[] this->h_trainingLabelBuffer;
+		this->h_trainingLabelBuffer = NULL;
+	}
+}
 
 	/*//try
 	std::ifstream inputData(inputDataFilepath, std::ios::binary);

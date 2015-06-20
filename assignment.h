@@ -20,6 +20,9 @@
 	//description of the expected format
 	#define INPUT_DATA_TYPE_DESC "file system path to the MNIST image data set"
 
+	//default path for the image training set
+	#define INPUT_DATA_DEFAULT_PATH "./data/train-images-idx3-ubyte"
+
 //parameter for input label file
 	//the short arg name
 	#define INPUT_LABEL_SHORT_ARG "l"
@@ -33,12 +36,29 @@
 	//description of the expected format
 	#define INPUT_LABEL_TYPE_DESC "file system path to the MNIST label data set"
 
+	//default path for the label training set
+	#define INPUT_LABEL_DEFAULT_PATH "./data/train-labels-idx1-ubyte"
+
 #include <stdint.h>
+#include <string>
 
 class Assignment {
+
 	private:
-		uint8_t* h_train_image_buffer;
-		uint8_t* h_train_label_buffer;
+		//file paths to the training data
+		std::string h_trainingDataPath;
+		std::string h_trainingLabelPath;
+
+		//byte buffer for the training data
+		uint8_t* h_trainingImageBuffer;
+		uint8_t* h_trainingLabelBuffer;
+
+		//parse the cmd args
+		void parseCMDArgs(int argc, char** argv);
+
+		//parse training data 
+		uint8_t* parseFileToBuffer(std::string filePath);
+
 	public:
 		Assignment(int argc, char** argv);
 		~Assignment();
