@@ -1,9 +1,15 @@
-SOURCE_FILES=assignment.cpp assignment.h ./include/tgawriter/tgawriter.h ./include/tgawriter/tgawriter.cpp
-COMPILER_ARGS=-std=c++11 -Wall -B ./
+SOURCE_FILES=main.cpp assignment_cmd.cpp tgawriter.o
+COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES)
+
+#compile the little tga module
+#$@ is the name of the target, $^ is the list of dependencies
+TGA_COMPILER_ARGS =-std=c++11 -Wall -c
+tgawriter.o: ./include/tgawriter/tgawriter.cpp
+	g++ $(TGA_COMPILER_ARGS) -o $@ $^
 
 # downloads TCLAP and puts the files in directory "include/tclap"
 # TCLAP is a small, flexible library that provides a simple interface for defining and accessing command line arguments
@@ -45,5 +51,6 @@ $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 
 clean:
 	rm -f $(OUTPUT_NAME)
-	rm -rf include/tclap
-	rm -rf data
+	rm -fr include/tclap
+	rm -fr data
+	rm -f tgawriter.o

@@ -1,17 +1,13 @@
 #include <string>
 #include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <iterator>
-#include <vector>
-
-#include <tclap/CmdLine.h>
-#include "./include/tgawriter/tgawriter.h"
 
 #include "assignment.h"
 
-int main(int argc, char** argv)
-{
+#include "tclap/CmdLine.h"
+#include "tgawriter.h"
+
+Assignment::Assignment(int argc, char** argv) {
+
 	//initialize cmd line parsing
 	TCLAP::CmdLine cmd(COMMAND_DESC, ' ', VERSION_STRING);
 
@@ -50,8 +46,15 @@ int main(int argc, char** argv)
 
 	// Get the input label value
 	std::string inputLabelFilepath = inputLabelArg.getValue();
+	
+	std::cout << "the data filename is: " << inputDataFilepath <<
+	std::endl << "the label filename is: " << inputLabelFilepath <<
+	std::endl;
+}
 
-	//try
+Assignment::~Assignment() {}
+
+	/*//try
 	std::ifstream inputData(inputDataFilepath, std::ios::binary);
 	std::ifstream inputLabels(inputLabelFilepath, std::ios::binary);
 
@@ -93,5 +96,4 @@ int main(int argc, char** argv)
 		std::string outname = "out.tga" + std::to_string(j);
 
 		tgawriter::write_truecolor_tga(outname , img, 28, 28);
-	}
-}
+	}*/
