@@ -7,13 +7,13 @@ $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 
 #compile the input data classes
 INPUT_DATA_CLASS_COMPILER_ARGS =-std=c++11 -Wall -c
-inputDataClass.o: ./include/inputData/binaryInputData.cpp
-	g++ $(INPUT_DATA_CLASS_COMPILER_ARGS) -o $@ $^
+inputDataClass.o: ./include/inputData/binaryInputData.cpp ./include/inputData/binaryInputData.h ./include/inputData/inputData.h
+	g++ $(INPUT_DATA_CLASS_COMPILER_ARGS) -o $@ ./include/inputData/binaryInputData.cpp 
 
 #compile the little tga module
 #$@ is the name of the target, $^ is the list of dependencies
-TGA_COMPILER_ARGS =-std=c++11 -Wall -c
-tgawriter.o: ./include/tgawriter/tgawriter.cpp
+TGA_COMPILER_ARGS =-std=c++11 -Wall -c 
+tgawriter.o: ./include/tgawriter/tgawriter.cpp ./include/tgawriter/tgawriter.h
 	g++ $(TGA_COMPILER_ARGS) -o $@ $^
 
 # downloads TCLAP and puts the files in directory "include/tclap"
@@ -25,6 +25,8 @@ tgawriter.o: ./include/tgawriter/tgawriter.cpp
 	cp -r tclap-1.2.1/include/tclap include/tclap
 	rm tclap-1.2.1.tar.gz
 	rm -r tclap-1.2.1
+
+data: ./data/train-images-idx3-ubyte ./data/train-labels-idx1-ubyte ./data/t10k-images-idx3-ubyte ./data/t10k-labels-idx1-ubyte
 
 # downloads the MNIST data set and puts the files in directory "data"
 ./data/train-images-idx3-ubyte:
@@ -59,3 +61,4 @@ clean:
 	rm -fr include/tclap
 	rm -fr data
 	rm -f tgawriter.o
+	rm -f inputDataClass.o

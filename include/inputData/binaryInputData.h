@@ -24,6 +24,7 @@ class BinaryInputData : public InputData {
 
 	public:
 
+		void printInformation();
 		BinaryInputData(const std::string DataPath, const std::string LabelPath);
 		~BinaryInputData();
 };

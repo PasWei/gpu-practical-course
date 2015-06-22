@@ -12,7 +12,8 @@ class InputData {
 		//number of training samples in the loaded image and label files
 		unsigned int numberOfSamples;
 
-		InputData();
+		virtual void printInformation() = 0;
 
-		virtual ~InputData();
+		InputData() {};
+		virtual ~InputData() {};
 };

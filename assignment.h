@@ -42,7 +42,7 @@
 #include <stdint.h>
 #include <string>
 
-#include "InputData.h"
+#include "inputData.h"
 
 class Assignment {
 

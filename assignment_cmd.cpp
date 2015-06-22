@@ -5,12 +5,15 @@
 
 #include "tclap/CmdLine.h"
 #include "tgawriter.h"
+#include "binaryInputData.h"
 
 Assignment::Assignment(int argc, char** argv) {
 
 	this->trainingData = NULL;
 
 	parseCMDArgs(argc, argv);
+
+	this->trainingData->printInformation();
 	
 }
 

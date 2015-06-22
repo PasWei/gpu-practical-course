@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "BinaryInputData.h"
+#include "binaryInputData.h"
 
 BinaryInputData::BinaryInputData(std::string DataPath, std::string LabelPath):InputData() {
 	
@@ -82,6 +82,37 @@ uint8_t* BinaryInputData::parseFileToBuffer(std::string filePath) {
 		std::cout << "cound not load file " << filePath << std::endl;
 	}
 	return NULL;
+}
+
+void BinaryInputData::printInformation() {
+
+	std::cout << "This is a BinaryInputData instance." << std::endl; 	
+
+	//status of image file
+	std::cout << "loaded binary image file " << this->DataPath << ":";
+	if (this->ImageBuffer != NULL) {
+		std::cout << " success." << std::endl;
+	} else {
+		std::cout << " failed." << std::endl;
+		return;
+	}
+
+	//status of label file
+	std::cout << "loaded binary image file " << this->LabelPath << ":";
+	if (this->LabelBuffer != NULL) {
+		std::cout << " success." << std::endl;
+	} else {
+		std::cout << " failed." << std::endl;
+		return;
+	}
+
+	if (this->numberOfSamples == 0) {
+		std::cout << " the files do not coincide!" << std::endl;
+		return;
+	} else {
+		std::cout << "loaded " << this->numberOfSamples << " labeled samples" << std::endl;
+	}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
