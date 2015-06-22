@@ -1,5 +1,6 @@
 *~
 include/tclap
+include/tinyxml2
 data
 assignment
 *.o

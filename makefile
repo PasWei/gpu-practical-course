@@ -16,6 +16,15 @@ TGA_COMPILER_ARGS =-std=c++11 -Wall -c
 tgawriter.o: ./include/tgawriter/tgawriter.cpp ./include/tgawriter/tgawriter.h
 	g++ $(TGA_COMPILER_ARGS) -o $@ $^
 
+#downloads tinyxml2 and puts the files in director "include/tinyxml2"
+#TinyXML-2 is a simple, small, efficient, C++ XML parser that can be easily integrated into other programs.
+./include/tinyxml2/tinyxml2.h:
+	wget -q https://raw.githubusercontent.com/leethomason/tinyxml2/master/tinyxml2.h
+	wget -q https://raw.githubusercontent.com/leethomason/tinyxml2/master/tinyxml2.cpp
+	mkdir -p ./include/tinyxml2
+	mv tinyxml2.h ./include/tinyxml2
+	mv tinyxml2.cpp ./include/tinyxml2
+
 # downloads TCLAP and puts the files in directory "include/tclap"
 # TCLAP is a small, flexible library that provides a simple interface for defining and accessing command line arguments
 ./include/tclap/CmdLine.h:
