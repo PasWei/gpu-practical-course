@@ -1,9 +1,14 @@
-SOURCE_FILES=main.cpp assignment_cmd.cpp inputData.cpp tgawriter.o
-COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter
+SOURCE_FILES=main.cpp assignment_cmd.cpp tgawriter.o inputDataClass.o
+COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter -I ./include/inputData
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
 	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES)
+
+#compile the input data classes
+INPUT_DATA_CLASS_COMPILER_ARGS =-std=c++11 -Wall -c
+inputDataClass.o: ./include/inputData/binaryInputData.cpp
+	g++ $(INPUT_DATA_CLASS_COMPILER_ARGS) -o $@ $^
 
 #compile the little tga module
 #$@ is the name of the target, $^ is the list of dependencies

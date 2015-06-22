@@ -54,7 +54,7 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 
 	//construct the training data object
 	//TODO: error handling is needed if file is not present->buffer of InputData will be NULL!
-	this->trainingData = new InputData(inputDataArg.getValue(), inputLabelArg.getValue());
+	this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
 }
 
 ////////////////////////////////////////////////////////////////

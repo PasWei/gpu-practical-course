@@ -2,4 +2,4 @@
 include/tclap
 data
 assignment
-tgawriter.o
+*.o
