@@ -42,22 +42,15 @@
 #include <stdint.h>
 #include <string>
 
+#include "InputData.h"
+
 class Assignment {
 
 	private:
-		//file paths to the training data
-		std::string h_trainingDataPath;
-		std::string h_trainingLabelPath;
-
-		//byte buffer for the training data
-		uint8_t* h_trainingImageBuffer;
-		uint8_t* h_trainingLabelBuffer;
+		InputData* trainingData;
 
 		//parse the cmd args
 		void parseCMDArgs(int argc, char** argv);
-
-		//parse training data 
-		uint8_t* parseFileToBuffer(std::string filePath);
 
 	public:
 		Assignment(int argc, char** argv);

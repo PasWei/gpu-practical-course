@@ -8,23 +8,15 @@
 
 Assignment::Assignment(int argc, char** argv) {
 
-	this->h_trainingImageBuffer = NULL;
-	this->h_trainingLabelBuffer = NULL;
+	this->trainingData = NULL;
 
 	parseCMDArgs(argc, argv);
-
-	std::cout << "the data filename is: " << this->h_trainingDataPath <<
-	std::endl << "the label filename is: " << this->h_trainingLabelPath <<
-	std::endl;
-
-	this->h_trainingImageBuffer = parseFileToBuffer(this->h_trainingDataPath);
-	this->h_trainingLabelBuffer = parseFileToBuffer(this->h_trainingLabelPath);
-
 	
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// This function parses all the cmd arguments into member variables for later use 
+// This function parses all the cmd arguments into member variables for later use
+// It sets the training set object
 /////////////////////////////////////////////////////////////////////////////////
 void Assignment::parseCMDArgs(int argc, char** argv) {
 	//initialize cmd line parsing
@@ -60,65 +52,19 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
 	}
 
-	// Get the input data value
-	this->h_trainingDataPath = inputDataArg.getValue();
-
-	// Get the input label value
-	this->h_trainingLabelPath = inputLabelArg.getValue();
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// this function loads a binary file into abuffer
-// filePath: the path to the file to be loaded
-// return: Pointer to a binary array. The array is allocated with new and has to be freed
-/////////////////////////////////////////////////////////////////////////////////////////
-uint8_t* Assignment::parseFileToBuffer(std::string filePath) {
-
-	std::ifstream is (filePath, std::ifstream::binary);
-
-	//check if the file is valid
-  	if (is) {
-		// get length of file:
-		is.seekg (0, is.end);
-		int length = is.tellg();
-		is.seekg (0, is.beg);
-
-		uint8_t* buffer = new uint8_t[length];
-
-		//std::cout << "Reading " << length << " characters... ";
-		// read data as a block:
-		is.read ((char*)buffer,length);
-
-		//check if all input was read
-		if (!is) {
-			std::cout << "error: only " << is.gcount() << " could be read from " << filePath << std::endl;
-			delete[] buffer;
-			return NULL;
-		}
-
-		//close
-		is.close();
-
-		return buffer;
-
-	//not a valid file
-	} else {
-		std::cout << "cound not load file " << filePath << std::endl;
-		return NULL;
-	}
+	//construct the training data object
+	//TODO: error handling is needed if file is not present->buffer of InputData will be NULL!
+	this->trainingData = new InputData(inputDataArg.getValue(), inputLabelArg.getValue());
 }
 
 ////////////////////////////////////////////////////////////////
 // Destructor
 ///////////////////////////////////////////////////////////////
 Assignment::~Assignment() {
-	if (this->h_trainingImageBuffer != NULL) {	
-		delete[] this->h_trainingImageBuffer;
-		this->h_trainingImageBuffer = NULL;
-	}
-	if (this->h_trainingLabelBuffer != NULL) {	
-		delete[] this->h_trainingLabelBuffer;
-		this->h_trainingLabelBuffer = NULL;
+	//delete the image buffer if initialized
+	if (this->trainingData != NULL) {	
+		delete this->trainingData;
+		this->trainingData = NULL;
 	}
 }
 

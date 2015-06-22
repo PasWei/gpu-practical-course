@@ -1,4 +1,4 @@
-SOURCE_FILES=main.cpp assignment_cmd.cpp tgawriter.o
+SOURCE_FILES=main.cpp assignment_cmd.cpp inputData.cpp tgawriter.o
 COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter
 OUTPUT_NAME=assignment
 
