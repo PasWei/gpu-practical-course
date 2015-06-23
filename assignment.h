@@ -39,6 +39,23 @@
 	//default path for the label training set
 	#define INPUT_LABEL_DEFAULT_PATH "./data/train-labels-idx1-ubyte"
 
+//parameter for input xml file
+	//the short arg name
+	#define INPUT_XML_SHORT_ARG "x"
+
+	//long arg name
+	#define INPUT_XML_LONG_ARG "input-xml"
+
+	//description
+	#define INPUT_XML_DESC "location of the file containing a data set in xml data format"
+
+	//description of the expected format
+	//TODO: expand on the actual file format
+	#define INPUT_XML_TYPE_DESC "file system path to xml data set"
+
+	//default path for the label training set
+	#define INPUT_XML_DEFAULT_PATH "./data/xor.xml"
+
 #include <stdint.h>
 #include <string>
 

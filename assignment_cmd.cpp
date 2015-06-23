@@ -6,6 +6,7 @@
 #include "tclap/CmdLine.h"
 #include "tgawriter.h"
 #include "binaryInputData.h"
+#include "xmlInputData.h"
 
 Assignment::Assignment(int argc, char** argv) {
 
@@ -47,6 +48,17 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 
 	cmd.add( inputLabelArg );
 
+	//argument for specification of the xml data file
+	TCLAP::ValueArg<std::string> inputXMLArg(
+		INPUT_XML_SHORT_ARG,
+		INPUT_XML_LONG_ARG,
+		INPUT_XML_DESC,
+		false, //required argument
+		INPUT_XML_DEFAULT_PATH, //default value
+		INPUT_XML_TYPE_DESC);
+
+	cmd.add( inputXMLArg );
+
 	// Parse the argv array.
 	try {  
 		cmd.parse( argc, argv );
@@ -55,9 +67,14 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
 	}
 
-	//construct the training data object
-	//TODO: error handling is needed if file is not present->buffer of InputData will be NULL!
-	this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
+	if (inputXMLArg.isSet()) {
+		//construct the training data object from xml file if the option was specified
+		this->trainingData = new XMLInputData(inputXMLArg.getValue());
+	} else {
+		//construct the training data object from MNIST data if no xml is present
+		//TODO: error handling is needed if file is not present->buffer of InputData will be NULL!
+		this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
+	}
 }
 
 ////////////////////////////////////////////////////////////////
