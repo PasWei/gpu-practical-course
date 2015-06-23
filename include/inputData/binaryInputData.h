@@ -25,4 +25,11 @@ class BinaryInputData : public InputData {
 		void printInformation();
 		BinaryInputData(const std::string DataPath, const std::string LabelPath);
 		~BinaryInputData();
+
+		/////////////////////////////////////////////////////////////
+		//This method writes all input vectors into a provided buffer
+		//It is assumed that the buffer has appropriate length
+		/////////////////////////////////////////////////////////////
+		void getInputBuffer(float* buffer);
+
 };

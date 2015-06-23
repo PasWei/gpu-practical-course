@@ -11,10 +11,32 @@
 Assignment::Assignment(int argc, char** argv) {
 
 	this->trainingData = NULL;
+	this->trainingInputBuffer = NULL;
+	this->trainingLabelBuffer = NULL;
 
 	parseCMDArgs(argc, argv);
 
 	this->trainingData->printInformation();
+
+	this->trainingInputBuffer = new float[this->trainingData->numberOfInputs * this->trainingData->numberOfSamples];
+
+	this->trainingData->getInputBuffer(this->trainingInputBuffer);
+
+	/*for (unsigned int i = 0; i < this->trainingData->numberOfInputs * this->trainingData->numberOfSamples; i++) {
+		std::cout << this->trainingInputBuffer[i] << std::endl;
+	}*/
+	
+	for (int i = 0; i < 28; i++) {
+		for (int j = 0; j < 28; j++) {
+			int addr = i*28 + j + 28*28*4;
+			if (this->trainingInputBuffer[addr] < 0.01f) {
+				std::cout << ".";
+			} else {
+				std::cout << "0";
+			}
+		}
+		std::cout << std::endl;
+	}
 	
 }
 
@@ -81,11 +103,22 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 // Destructor
 ///////////////////////////////////////////////////////////////
 Assignment::~Assignment() {
-	//delete the image buffer if initialized
+	//delete the training data object if initialized
 	if (this->trainingData != NULL) {	
 		delete this->trainingData;
 		this->trainingData = NULL;
 	}
+	
+	if (this->trainingInputBuffer != NULL) {	
+		delete[] this->trainingInputBuffer;
+		this->trainingInputBuffer = NULL;
+	}
+
+	if (this->trainingLabelBuffer != NULL) {	
+		delete[] this->trainingLabelBuffer;
+		this->trainingLabelBuffer = NULL;
+	}
+
 }
 
 	/*//try

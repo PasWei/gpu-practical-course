@@ -66,6 +66,10 @@ class Assignment {
 	private:
 		InputData* trainingData;
 
+		float* trainingInputBuffer;
+		
+		float* trainingLabelBuffer;
+
 		//parse the cmd args
 		void parseCMDArgs(int argc, char** argv);
 

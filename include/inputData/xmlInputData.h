@@ -21,5 +21,11 @@ class XMLInputData : public InputData {
 		XMLInputData(const std::string filePath);
 		~XMLInputData();
 		void printInformation();
+		
+		/////////////////////////////////////////////////////////////
+		//This method writes all input vectors into a provided buffer
+		//It is assumed that the buffer has appropriate length
+		/////////////////////////////////////////////////////////////
+		void getInputBuffer(float* buffer);
 
 };

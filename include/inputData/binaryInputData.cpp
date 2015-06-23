@@ -117,6 +117,22 @@ void BinaryInputData::printInformation() {
 
 }
 
+/////////////////////////////////////////////////////////////
+//This method writes all input vectors into a provided buffer
+//It is assumed that the buffer has appropriate length
+/////////////////////////////////////////////////////////////
+void BinaryInputData::getInputBuffer(float* buffer) {
+
+	int addr;
+
+	for (unsigned int i = 0; i < this->numberOfSamples; i++) {
+		for (unsigned int j = 0; j < 28*28; j++) {
+			addr = i * this->numberOfInputs + j;
+			buffer[addr] = ((float) this->ImageBuffer[16 + addr])/255.0f;
+		}		
+	}	
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Destructor
 ///////////////////////////////////////////////////////////////////////////////
