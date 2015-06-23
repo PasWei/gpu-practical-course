@@ -21,23 +21,23 @@ Assignment::Assignment(int argc, char** argv) {
 	this->trainingInputBuffer = new float[this->trainingData->numberOfInputs * this->trainingData->numberOfSamples];
 
 	this->trainingData->getInputBuffer(this->trainingInputBuffer);
-
-	/*for (unsigned int i = 0; i < this->trainingData->numberOfInputs * this->trainingData->numberOfSamples; i++) {
-		std::cout << this->trainingInputBuffer[i] << std::endl;
-	}*/
 	
+	//this code displays one image from the mnist set as ascii art
+	/*
+	int number = 3;
 	for (int i = 0; i < 28; i++) {
 		for (int j = 0; j < 28; j++) {
-			int addr = i*28 + j + 28*28*4;
-			if (this->trainingInputBuffer[addr] < 0.01f) {
+			int addr = i*28 + j + 28*28*number;
+			if (this->trainingInputBuffer[addr] < 0.05f) {
+				std::cout << " ";
+			} else if (this->trainingInputBuffer[addr] < 0.5f) {
 				std::cout << ".";
 			} else {
 				std::cout << "0";
 			}
 		}
 		std::cout << std::endl;
-	}
-	
+	}*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////

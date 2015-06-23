@@ -56,6 +56,34 @@ void XMLInputData::getInputBuffer(float* buffer) {
 	}
 }
 
+void XMLInputData::getLabelBuffer(float* buffer) {
+	int addr;
+	tinyxml2::XMLElement* sample = this->doc->FirstChildElement("samples")->FirstChildElement("sample");
+	
+	if (sample == NULL) {
+		std::cout << "The xml file has no tag named sample!" << std::endl;
+	}
+
+	//std::cout << "sample has children: " << sample->NoChildren() << std::endl;
+
+	for (unsigned int i = 0; i < this->numberOfSamples; i++) {
+	
+		tinyxml2::XMLElement* outputNode = sample->FirstChildElement("sampleOutput");
+		
+		if (outputNode == NULL) {
+			std::cout << "The sample tag has no sampleOutput tag" << std::endl;
+		}
+
+		for (unsigned int j = 0; j < this->numberOfOutputs; j++) {
+			addr = i * this->numberOfOutputs + j;
+			buffer[addr] = std::stof(outputNode->FirstChild()->ToText()->Value(), NULL);
+			outputNode = outputNode->NextSiblingElement("sampleOutput");
+		}
+
+		sample = sample->NextSiblingElement("sample");
+	}
+}
+
 void XMLInputData::printInformation() {
 	std::cout << "This is a XMLInputData instance." << std::endl;
 	std::cout << "There are " << this->numberOfSamples <<" samples in " << this->filePath

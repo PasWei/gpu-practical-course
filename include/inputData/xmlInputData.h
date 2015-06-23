@@ -28,4 +28,10 @@ class XMLInputData : public InputData {
 		/////////////////////////////////////////////////////////////
 		void getInputBuffer(float* buffer);
 
+		/////////////////////////////////////////////////////////////
+		//This method writes all label vectors into a provided buffer
+		//It is assumed that the buffer has appropriate length
+		/////////////////////////////////////////////////////////////
+		void getLabelBuffer(float* buffer);
+
 };

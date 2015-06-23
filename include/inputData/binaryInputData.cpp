@@ -133,6 +133,26 @@ void BinaryInputData::getInputBuffer(float* buffer) {
 	}	
 }
 
+/////////////////////////////////////////////////////////////
+//This method writes all input vectors into a provided buffer
+//It is assumed that the buffer has appropriate length
+/////////////////////////////////////////////////////////////
+void BinaryInputData::getLabelBuffer(float* buffer) {
+
+	int addr;
+
+	for (unsigned int i = 0; i < this->numberOfSamples; i++) {
+		for (unsigned int j = 0; j < 10; j++) {
+			addr = i * this->numberOfInputs + j;
+			if (this->LabelBuffer[i] == j)	{
+				buffer[addr] = 1.0f;
+			} else {
+				buffer[addr] = 0.0f;
+			}
+		}		
+	}	
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Destructor
 ///////////////////////////////////////////////////////////////////////////////
