@@ -40,11 +40,13 @@ BinaryInputData::BinaryInputData(std::string DataPath, std::string LabelPath):In
 			" differs from the number of labels in " << this->LabelPath << std::endl;
 	} else {
 		this->numberOfSamples = imageCount;
+		this->numberOfInputs = 28*28;
+		this->numberOfOutputs = 10; 
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// this function loads a binary file into abuffer
+// this function loads a binary file into a buffer
 // filePath: the path to the file to be loaded
 // return: Pointer to a binary array. The array is allocated with new and has to be freed
 /////////////////////////////////////////////////////////////////////////////////////////

@@ -45,10 +45,12 @@ tinyxml2.o: ./include/tinyxml2/tinyxml2.cpp ./include/tinyxml2/tinyxml2.h
 	rm tclap-1.2.1.tar.gz
 	rm -r tclap-1.2.1
 
-./data/xor.xml:
+./data/xor.xml: makefile
 	echo "<?xml version=\"1.0\"?>" > ./data/xor.xml
 	echo "<samples>" >> ./data/xor.xml
 	echo "	<sampleCount>4</sampleCount>" >> ./data/xor.xml
+	echo "	<sampleInputCount>2</sampleInputCount>" >> ./data/xor.xml
+	echo "	<sampleOutputCount>1</sampleOutputCount>" >> ./data/xor.xml
 	echo "	<sample>" >> ./data/xor.xml
 	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml
 	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml

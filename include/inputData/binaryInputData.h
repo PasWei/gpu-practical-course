@@ -5,8 +5,6 @@
 
 #include "inputData.h"
 
-
-
 class BinaryInputData : public InputData {
 	
 	private:
