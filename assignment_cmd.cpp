@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <random>
 
 #include "assignment.h"
 
@@ -14,17 +15,25 @@ Assignment::Assignment(int argc, char** argv) {
 	this->trainingInputBuffer = NULL;
 	this->trainingLabelBuffer = NULL;
 
+	//parse the command line args
 	parseCMDArgs(argc, argv);
 
+	//print some information about the training set
 	this->trainingData->printInformation();
 
+	//allocate and fill the buffer for the training data
 	this->trainingInputBuffer = new float[this->trainingData->numberOfInputs * this->trainingData->numberOfSamples];
-
 	this->trainingData->getInputBuffer(this->trainingInputBuffer);
+
+	//allocate and fill the buffer for the training labels
+	this->trainingLabelBuffer = new float[this->trainingData->numberOfOutputs * this->trainingData->numberOfSamples];
+	this->trainingData->getLabelBuffer(this->trainingLabelBuffer);
 	
-	//this code displays one image from the mnist set as ascii art
+	this->initWeightBuffer();
+	this->randomizeWeights();
+	//this code displays one image from the mnist set as ascii art and the corresponding label
 	/*
-	int number = 3;
+	int number = 59998;
 	for (int i = 0; i < 28; i++) {
 		for (int j = 0; j < 28; j++) {
 			int addr = i*28 + j + 28*28*number;
@@ -37,7 +46,75 @@ Assignment::Assignment(int argc, char** argv) {
 			}
 		}
 		std::cout << std::endl;
-	}*/
+	}
+	std::cout << "label: ";
+	for (int i = 0; i < 10; i++) {
+		int addr = 10 * number + i;
+		std::cout << this->trainingLabelBuffer[addr] << " ";	
+	}
+	std::cout << std::endl;
+	*/
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//initialize host memory weight vectors for each hidden layer and output layer
+//////////////////////////////////////////////////////////////////////////////
+void Assignment::initWeightBuffer() {
+	
+
+	std::cout << std::endl << "initialize the weight buffers" << std::endl;
+	
+	//dont forget the constant 1 weights!
+	//the first hidden layer needs the number of input neurons
+	this->sizeOfWeightBuffer.push_back(this->trainingData->numberOfInputs * this->hiddenLayers[0] + this->hiddenLayers[0]);
+	this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
+	
+	std::cout << "layer 0 has " << this->sizeOfWeightBuffer.back() << " weights" << std::endl;
+
+	//hideden layers
+	for (unsigned int i = 1; i < this->hiddenLayers.size(); i++) {
+		this->sizeOfWeightBuffer.push_back(this->hiddenLayers[i-1] * this->hiddenLayers[i] + this->hiddenLayers[i]);
+		this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
+
+		std::cout << "layer " << i << " has " << this->sizeOfWeightBuffer.back() << " weights" << std::endl;
+	}
+	
+	//the last layer needs the number of outputs
+	this->sizeOfWeightBuffer.push_back(
+		this->hiddenLayers.back() * this->trainingData->numberOfOutputs + this->trainingData->numberOfOutputs
+	);
+	this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
+
+	std::cout << "outputlayer (layer " << this->h_weightBuffers.size()-1 << ") has " <<
+		this->sizeOfWeightBuffer.back() << " weights" << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////
+//randomize the weight vectors of the hidden layers and the output layer
+////////////////////////////////////////////////////////////////////////
+void Assignment::randomizeWeights() {
+	
+	//random device for unsigned integers
+	std::random_device rd;
+	unsigned int random;
+	float sign;
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
+
+			//determine the sign
+			random = rd();
+			sign = -1.0f;
+			if (random > rd.max()/2) {
+				sign = 1.0f;
+			}
+
+			//compute random float
+			this->h_weightBuffers[i][j] = sign * (((float) rd()) / ((float) rd.max()));
+			/*if (i == 0) {
+				std::cout << this->h_weightBuffers[i][j] << std::endl;
+			}*/
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -81,6 +158,15 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 
 	cmd.add( inputXMLArg );
 
+	TCLAP::MultiArg<int> hiddenLayerMultiArg(
+		INPUT_HIDDEN_SHORT_ARG,
+		INPUT_HIDDEN_LONG_ARG,
+		INPUT_HIDDEN_DESC,
+		true,
+		INPUT_HIDDEN_TYPE_DESC);
+
+	cmd.add(hiddenLayerMultiArg);	
+
 	// Parse the argv array.
 	try {  
 		cmd.parse( argc, argv );
@@ -97,6 +183,8 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		//TODO: error handling is needed if file is not present->buffer of InputData will be NULL!
 		this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
 	}
+
+	this->hiddenLayers = hiddenLayerMultiArg.getValue();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -119,38 +207,14 @@ Assignment::~Assignment() {
 		this->trainingLabelBuffer = NULL;
 	}
 
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+		delete[] this->h_weightBuffers[i];
+	}
+
 }
 
-	/*//try
-	std::ifstream inputData(inputDataFilepath, std::ios::binary);
-	std::ifstream inputLabels(inputLabelFilepath, std::ios::binary);
-
-	//see if the file was opened, exit with error otherwise
-	if(!inputData.is_open()) {
-		std::cout << "data file " << inputDataFilepath << " was not found!" << std::endl;
-		exit(1);
-	}
-
-	if(!inputLabels.is_open()) {
-		std::cout << "label file " << inputDataFilepath << " was not found!" << std::endl;
-		exit(1);
-	}
-
-	//copy the data into buffers
-	std::vector<char> data(
-		(std::istreambuf_iterator<char>(inputData)),
-		(std::istreambuf_iterator<char>()));
-	std::vector<char> label(
-		(std::istreambuf_iterator<char>(inputLabels)),
-		(std::istreambuf_iterator<char>()));
-	
-	int dataType = data[2];
-
-	std::cout << "the data filename is: " << inputDataFilepath <<
-	std::endl << " the label filename is: " << inputLabelFilepath <<
-	std::endl << " buffer size " << data.size() << std::endl <<
-	" data type is: " << dataType << std::endl;
-	
+	//this code writes out an tga image
+	/*
 	for (int j = 0; j < 19; j++) {
 		tgawriter::RGB_t img[28*28];
 

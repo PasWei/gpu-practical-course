@@ -3,7 +3,7 @@ SOURCE_FILES=main.cpp assignment_cmd.cpp tgawriter.o binaryInputDataClass.o xmlI
 COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2
 OUTPUT_NAME=assignment
 
-$(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES)
+$(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES) assignment.h
 	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES)
 
 #compile the input data classes

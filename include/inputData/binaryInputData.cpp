@@ -143,8 +143,8 @@ void BinaryInputData::getLabelBuffer(float* buffer) {
 
 	for (unsigned int i = 0; i < this->numberOfSamples; i++) {
 		for (unsigned int j = 0; j < 10; j++) {
-			addr = i * this->numberOfInputs + j;
-			if (this->LabelBuffer[i] == j)	{
+			addr = i * this->numberOfOutputs + j;
+			if (this->LabelBuffer[8 + i] == j)	{
 				buffer[addr] = 1.0f;
 			} else {
 				buffer[addr] = 0.0f;

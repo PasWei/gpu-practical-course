@@ -56,8 +56,25 @@
 	//default path for the label training set
 	#define INPUT_XML_DEFAULT_PATH "./data/xor.xml"
 
+//multi parameter to read the number and size of the neuronal net hidden layer
+	//the short arg name
+	#define INPUT_HIDDEN_SHORT_ARG "H"
+
+	//long arg name
+	#define INPUT_HIDDEN_LONG_ARG "hidden-layer"
+
+	//description
+	#define INPUT_HIDDEN_DESC "number of neurons in a new hidden layer. Can be specified multiple times. The order matters."
+
+	//description of the actual format
+	#define INPUT_HIDDEN_TYPE_DESC "Name intergers in the order you want to arrange the hidden layers."
+
+
+
+
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 #include "inputData.h"
 
@@ -70,8 +87,30 @@ class Assignment {
 		
 		float* trainingLabelBuffer;
 
-		//parse the cmd args
+		//number of hidden layers and number of neurons in each layer
+		std::vector<int> hiddenLayers;
+
+		//contains the sizes of each weight buffer
+		std::vector<int> sizeOfWeightBuffer;
+
+		//pointers to the weight buffers of each layer
+		std::vector<float*> h_weightBuffers;
+
+		/////////////////////////////////////////////////////////////////////////////////
+		// This function parses all the cmd arguments into member variables for later use
+		// It sets the training set object
+		/////////////////////////////////////////////////////////////////////////////////
 		void parseCMDArgs(int argc, char** argv);
+
+		//////////////////////////////////////////////////////////////////////////////
+		//initialize host memory weight vectors for each hidden layer and output layer
+		//////////////////////////////////////////////////////////////////////////////
+		void initWeightBuffer();
+
+		////////////////////////////////////////////////////////////////////////
+		//randomize the weight vectors of the hidden layers and the output layer
+		////////////////////////////////////////////////////////////////////////
+		void randomizeWeights();
 
 	public:
 		Assignment(int argc, char** argv);
