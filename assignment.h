@@ -47,7 +47,7 @@
 	#define INPUT_XML_LONG_ARG "input-xml"
 
 	//description
-	#define INPUT_XML_DESC "location of the file containing a data set in xml data format"
+	#define INPUT_XML_DESC "location of the file containing a data set in xml data format. If this flag is set, it overrides -i and -l"
 
 	//description of the expected format
 	//TODO: expand on the actual file format
@@ -83,8 +83,8 @@ class Assignment {
 	private:
 		InputData* trainingData;
 
+		//buffers for input data and labels
 		float* trainingInputBuffer;
-		
 		float* trainingLabelBuffer;
 
 		//number of hidden layers and number of neurons in each layer
@@ -95,6 +95,15 @@ class Assignment {
 
 		//pointers to the weight buffers of each layer
 		std::vector<float*> h_weightBuffers;
+		
+		//pointers to the partial results of feed forward - one per layer
+		std::vector<float*> h_partialResults;
+
+		//pointers to the delta results of back propagation - one per layer
+		std::vector<float*> h_deltaUpdates;
+
+		//learning rate
+		const float learningRate = 0.001;
 
 		/////////////////////////////////////////////////////////////////////////////////
 		// This function parses all the cmd arguments into member variables for later use
@@ -113,6 +122,20 @@ class Assignment {
 		void randomizeWeights();
 
 	public:
+
 		Assignment(int argc, char** argv);
 		~Assignment();
+		
+		///////////////////////////////////////////////////////////////////////////////
+		//computes the output of the neuronal network given an index in the input array
+		//the output is saved in the temporary buffer buf2
+		///////////////////////////////////////////////////////////////////////////////
+		void feedForwardCPU(unsigned int indexOfInput);
+
+		///////////////////////////////////////////////////////////////////////////////
+		//computes gradient of the neuronal network given an index in the input array
+		//it is assumed that the feed forward output corresponding to indexOfInput
+		//is present in h_partialResults
+		///////////////////////////////////////////////////////////////////////////////
+		void backPropagationCPU(unsigned int indexOfInput);
 };
