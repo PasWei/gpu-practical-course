@@ -36,7 +36,7 @@ Assignment::Assignment(int argc, char** argv) {
 	this->randomizeWeights();
 	//this code displays one image from the mnist set as ascii art and the corresponding label	
 
-	for (int k = 0; k < 10; k++) {
+	/*for (int k = 0; k < 10; k++) {
 
 	int number = k;
 	for (int i = 0; i < 28; i++) {
@@ -59,7 +59,7 @@ Assignment::Assignment(int argc, char** argv) {
 	}
 	std::cout << std::endl;
 
-	}
+	}*/
 	
 }
 
@@ -126,9 +126,6 @@ void Assignment::randomizeWeights() {
 
 			//compute random float
 			this->h_weightBuffers[i][j] = sign * (((float) rd()) / ((float) rd.max()));
-			/*if (i == 0) {
-				std::cout << this->h_weightBuffers[i][j] << std::endl;
-			}*/
 		}
 	}
 }
@@ -174,11 +171,10 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 				//of all neurons first, then all second weights and so on
 				//this is to be conform with the gpu implementation with coalesced load
 				if (i == 0) {
-					sum += this->trainingInputBuffer[k + index] * h_weightBuffers[i][k * numNeurons + j];
+					sum += this->trainingInputBuffer[k + index] * this->h_weightBuffers[i][k * numNeurons + j];
 				} else {
-					sum += this->h_partialResults[i-1][k] * h_weightBuffers[i][k * numNeurons + j];
+					sum += this->h_partialResults[i-1][k] * this->h_weightBuffers[i][k * numNeurons + j];
 				}
-
 				//std::cout << "i: " << i << " j: " << j << " k: " << k << " input: " << buf1[k] << " weight: " <<
 				//	h_weightBuffers[i][k * numNeurons + j] << " sum: " << sum << " inputSize: " << inputSize << std::endl;
 			}
@@ -199,8 +195,12 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 			//its the output layer
 			} else {
 				this->h_partialResults[i][j] = sum;
-				//std::cout << "output: " << buf2[j] << std::endl;
 			}
+
+			/*if (this->h_partialResults[i][j] != this->h_partialResults[i][j]) {
+					std::cout << "this->h_partialResults[i][j] is not a number! for i = " << i << " and j = " << j << std::endl;
+			}*/
+
 		}
 
  		//set the correct number of inputs for the next layer
@@ -213,7 +213,7 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		expSum += std::exp(this->h_partialResults.back()[i]);
 	}
-	
+
 	float crossEntropy = 0.0f;
 
 	//compute the output
@@ -248,22 +248,27 @@ void Assignment::backPropagationCPU(unsigned int indexOfInput) {
 	
 	//compute deltas for the output layer
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		this->h_deltaUpdates.back()[i] = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];	
+		this->h_deltaUpdates.back()[i] = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];
+		//std::cout << "delta for output: " << this->h_deltaUpdates.back()[i] << std::endl;	
 	}
+
+	//std::cout << " output schreibt in den buffer " << this->h_deltaUpdates.size() -1 << std::endl;
 
 	//compute deltas for the hidden layers
 	int numNeuronsNextLayer = this->trainingData->numberOfOutputs;
 	//iterate over all hidden layers
 	for (int i = this->hiddenLayers.size()-1; i >= 0; i--) {
 		//iterate over all neurons in that layer
+		//std::cout << "i: " << i << " numNeuronsNextLayer: " << numNeuronsNextLayer <<
+		//	" geschrieben wird in buffer " << i << std::endl;
 		for (int j = 0; j < this->hiddenLayers[i]; j++) {
 			//the delta
 			float delta = 0.0f;
 
 			for (int k = 0; k < numNeuronsNextLayer; k++) {
-				delta += this->h_deltaUpdates[i+1][k] *  h_weightBuffers[i+1][k * numNeuronsNextLayer + j];
-			}
-			
+				delta += this->h_deltaUpdates[i+1][k] * h_weightBuffers[i+1][k * this->hiddenLayers[i] + j];
+			}		
+
 			//the second part of the derivative
 			delta *= this->h_partialResults[i][j] * (1.0f - this->h_partialResults[i][j]);
 			//write to buffer
@@ -275,25 +280,35 @@ void Assignment::backPropagationCPU(unsigned int indexOfInput) {
 	}
 
 	//update the weights
-
 	int numNeuronsPreviousLayer = this->trainingData->numberOfInputs;
 	int numNeuronsThisLayer = this->hiddenLayers[0];
 
 	//iterate over all layers
 	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {		
 		//enumerate all inputs
-		for (int j = 0; j < numNeuronsPreviousLayer; j++) {
+		for (int j = 0; j < numNeuronsPreviousLayer + 1; j++) {
 			//get the input x_{ij}
 			float input;
-			if (i == 0) {
-				input = this->trainingInputBuffer[inputIndex + j];
+			if (j == numNeuronsPreviousLayer) {
+				input = 1.0f;
 			} else {
-				input = this->h_partialResults[i-1][j];
+				if (i == 0) {
+					input = this->trainingInputBuffer[inputIndex + j];
+				} else {
+					input = this->h_partialResults[i-1][j];
+				}
 			}
 			//enumerate all deltas
 			for (int k = 0; k < numNeuronsThisLayer; k++) {
-				float delta = this->h_deltaUpdates[i][k] * this->learningRate;
-				h_weightBuffers[i][j * k] += delta * input; 
+				float delta = this->h_deltaUpdates[i][k];
+				/*if (delta != delta) {
+					std::cout << "delta is not a number!" << std::endl;
+				}
+				if (input != input) {
+					std::cout << "input is not a number!" << std::endl;
+				}*/
+				h_weightBuffers[i][j * numNeuronsThisLayer + k] += delta * input * this->learningRate; 
+				//std::cout << "delta: " << delta << " input: " << input << " i: " << i << std::endl;
 			}
 		}
 		
@@ -378,9 +393,60 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 	this->hiddenLayers = hiddenLayerMultiArg.getValue();
 }
 
+void Assignment::stochasticGradientDescent(int epoch) {
+	
+		std::random_device rd;
+		unsigned int random;
+		for (int j = 0; j < 1000; j++) {
+			double entropy = 0.0f;
+			for (int i = 0; i < epoch; i++) {
+				//random = rd() % this->trainingData->numberOfSamples;
+				random = rd() % 10;
+				//random = 0;
+				entropy += feedForwardCPU(random);
+				backPropagationCPU(random);
+			}
+			std::cout << "Entropy: " << entropy << " Epoch " << j << std::endl;
+			
+			int number = random;
+			for (int i = 0; i < 28; i++) {
+				for (int j = 0; j < 28; j++) {
+					int addr = i*28 + j + 28*28*number;
+					if (this->trainingInputBuffer[addr] < 0.05f) {
+						std::cout << " ";
+					} else if (this->trainingInputBuffer[addr] < 0.5f) {
+						std::cout << ".";
+					} else {
+						std::cout << "0";
+					}
+				}
+				std::cout << std::endl;
+			}
+			std::cout << "label: ";
+			for (int i = 0; i < 10; i++) {
+				int addr = 10 * number + i;
+				std::cout << this->trainingLabelBuffer[addr] << " ";	
+			}
+			std::cout << std::endl;
+			
+			std::cout << "output: ";
+			int guess;
+			float max = 0.0;
+			for (int i = 0; i < 10; i++) {
+				std::cout << this->h_partialResults.back()[i] << " ";
+				if (std::max(max, this->h_partialResults.back()[i]) == this->h_partialResults.back()[i]) {
+					max = this->h_partialResults.back()[i];
+					guess = i;
+				}			
+			}
+			std::cout << std::endl;
+			std::cout << "guess: " << guess << std::endl;
+		}
+}
+
 ////////////////////////////////////////////////////////////////
 // Destructor
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 Assignment::~Assignment() {
 	//delete the training data object if initialized
 	if (this->trainingData != NULL) {	

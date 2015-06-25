@@ -1,6 +1,7 @@
 #make sure to list tinyxml2 after xmlInputDataClass to avoid compiler errors
+#the g++ compiler flag -g compiles debug symbols into the code
 SOURCE_FILES=main.cpp assignment_cmd.cpp tgawriter.o binaryInputDataClass.o xmlInputDataClass.o tinyxml2.o
-COMPILER_ARGS=-std=c++11 -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2
+COMPILER_ARGS=-std=c++11 -g -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES) assignment.h

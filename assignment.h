@@ -121,6 +121,14 @@ class Assignment {
 		////////////////////////////////////////////////////////////////////////
 		void randomizeWeights();
 
+		
+		///////////////////////////////////////////////////////////////////////////////
+		//computes gradient of the neuronal network given an index in the input array
+		//it is assumed that the feed forward output corresponding to indexOfInput
+		//is present in h_partialResults
+		///////////////////////////////////////////////////////////////////////////////
+		void backPropagationCPU(unsigned int indexOfInput);
+
 	public:
 
 		Assignment(int argc, char** argv);
@@ -132,10 +140,5 @@ class Assignment {
 		///////////////////////////////////////////////////////////////////////////////
 		float feedForwardCPU(unsigned int indexOfInput);
 
-		///////////////////////////////////////////////////////////////////////////////
-		//computes gradient of the neuronal network given an index in the input array
-		//it is assumed that the feed forward output corresponding to indexOfInput
-		//is present in h_partialResults
-		///////////////////////////////////////////////////////////////////////////////
-		void backPropagationCPU(unsigned int indexOfInput);
+		void stochasticGradientDescent(int epoch);
 };
