@@ -8,8 +8,9 @@ int main(int argc, char** argv)
 
 	Assignment assign (argc, argv);
 
-	for (int i = 0; i < 1; i++) {
-		assign.feedForwardCPU(0);
+	for (int i = 0; i < 10; i++) {
+		std::cout << "CrossEntropy = " << assign.feedForwardCPU(0) << std::endl;
+		assign.backPropagationCPU(0);
 	}
 
 	std::cout << std::endl;

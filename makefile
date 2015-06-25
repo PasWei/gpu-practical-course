@@ -76,6 +76,7 @@ tinyxml2.o: ./include/tinyxml2/tinyxml2.cpp ./include/tinyxml2/tinyxml2.h
 data: ./data/train-images-idx3-ubyte ./data/train-labels-idx1-ubyte ./data/t10k-images-idx3-ubyte ./data/t10k-labels-idx1-ubyte
 
 # downloads the MNIST data set and puts the files in directory "data"
+# the first few digits: 5 0 4 1 9 2 1 3 1 4
 ./data/train-images-idx3-ubyte:
 	wget -q http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
 	gunzip train-images-idx3-ubyte.gz

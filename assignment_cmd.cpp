@@ -36,7 +36,9 @@ Assignment::Assignment(int argc, char** argv) {
 	this->randomizeWeights();
 	//this code displays one image from the mnist set as ascii art and the corresponding label	
 
-	/*int number = 0;
+	for (int k = 0; k < 10; k++) {
+
+	int number = k;
 	for (int i = 0; i < 28; i++) {
 		for (int j = 0; j < 28; j++) {
 			int addr = i*28 + j + 28*28*number;
@@ -55,7 +57,9 @@ Assignment::Assignment(int argc, char** argv) {
 		int addr = 10 * number + i;
 		std::cout << this->trainingLabelBuffer[addr] << " ";	
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
+
+	}
 	
 }
 
@@ -132,15 +136,16 @@ void Assignment::randomizeWeights() {
 ///////////////////////////////////////////////////////////////////////////////
 //computes the output of the neuronal network given an index in the input array
 ///////////////////////////////////////////////////////////////////////////////
-void Assignment::feedForwardCPU(unsigned int indexOfInput) {
+float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	
 	//is the index valid?
 	if (indexOfInput >= this->trainingData->numberOfSamples) {
 		std::cout << indexOfInput << " is not a valid index (out of bounds)!" << std::endl;
 	}
 
-	//calculate the actual index in the input array
+	//calculate the actual index in the input array and label array
 	int index = this->trainingData->numberOfInputs * indexOfInput;
+	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
 
 	//number of inputs for each layer. Initialized with the first.
 	int inputSize = this->trainingData->numberOfInputs;
@@ -209,18 +214,24 @@ void Assignment::feedForwardCPU(unsigned int indexOfInput) {
 		expSum += std::exp(this->h_partialResults.back()[i]);
 	}
 	
+	float crossEntropy = 0.0f;
+
 	//compute the output
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		this->h_partialResults.back()[i] = std::exp(this->h_partialResults.back()[i])/expSum; 
+		this->h_partialResults.back()[i] = std::exp(this->h_partialResults.back()[i])/expSum;
+		float target = this->trainingLabelBuffer[labelIndex + i];
+		float output = this->h_partialResults.back()[i];
+		crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
 	}
 
 	//output the values
-	std::cout << "Output of the neuronal network: ";
+	/*std::cout << "Output of the neuronal network: ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 	
+	return crossEntropy;
 }
 
 
@@ -233,14 +244,68 @@ void Assignment::backPropagationCPU(unsigned int indexOfInput) {
 
 	//compute index in label buffer
 	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
+	int inputIndex = this->trainingData->numberOfInputs * indexOfInput;
 	
 	//compute deltas for the output layer
-	for (int i = 0; i < this->trainingData->numberOfOutputs) {
+	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		this->h_deltaUpdates.back()[i] = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];	
 	}
 
 	//compute deltas for the hidden layers
-	
+	int numNeuronsNextLayer = this->trainingData->numberOfOutputs;
+	//iterate over all hidden layers
+	for (int i = this->hiddenLayers.size()-1; i >= 0; i--) {
+		//iterate over all neurons in that layer
+		for (int j = 0; j < this->hiddenLayers[i]; j++) {
+			//the delta
+			float delta = 0.0f;
+
+			for (int k = 0; k < numNeuronsNextLayer; k++) {
+				delta += this->h_deltaUpdates[i+1][k] *  h_weightBuffers[i+1][k * numNeuronsNextLayer + j];
+			}
+			
+			//the second part of the derivative
+			delta *= this->h_partialResults[i][j] * (1.0f - this->h_partialResults[i][j]);
+			//write to buffer
+			this->h_deltaUpdates[i][j] = delta;
+		}
+		
+		//set number of neurons for the next layer
+		numNeuronsNextLayer = this->hiddenLayers[i];
+	}
+
+	//update the weights
+
+	int numNeuronsPreviousLayer = this->trainingData->numberOfInputs;
+	int numNeuronsThisLayer = this->hiddenLayers[0];
+
+	//iterate over all layers
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {		
+		//enumerate all inputs
+		for (int j = 0; j < numNeuronsPreviousLayer; j++) {
+			//get the input x_{ij}
+			float input;
+			if (i == 0) {
+				input = this->trainingInputBuffer[inputIndex + j];
+			} else {
+				input = this->h_partialResults[i-1][j];
+			}
+			//enumerate all deltas
+			for (int k = 0; k < numNeuronsThisLayer; k++) {
+				float delta = this->h_deltaUpdates[i][k] * this->learningRate;
+				h_weightBuffers[i][j * k] += delta * input; 
+			}
+		}
+		
+		//update numbers
+		if (i == this->h_weightBuffers.size() - 2) {
+			numNeuronsThisLayer = this->trainingData->numberOfOutputs;
+		} else {
+			numNeuronsThisLayer = this->hiddenLayers[i+1];
+		}
+
+		numNeuronsPreviousLayer = this->hiddenLayers[i];
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////

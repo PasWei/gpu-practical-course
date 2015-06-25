@@ -103,7 +103,7 @@ class Assignment {
 		std::vector<float*> h_deltaUpdates;
 
 		//learning rate
-		const float learningRate = 0.001;
+		const float learningRate = 0.0001;
 
 		/////////////////////////////////////////////////////////////////////////////////
 		// This function parses all the cmd arguments into member variables for later use
@@ -130,7 +130,7 @@ class Assignment {
 		//computes the output of the neuronal network given an index in the input array
 		//the output is saved in the temporary buffer buf2
 		///////////////////////////////////////////////////////////////////////////////
-		void feedForwardCPU(unsigned int indexOfInput);
+		float feedForwardCPU(unsigned int indexOfInput);
 
 		///////////////////////////////////////////////////////////////////////////////
 		//computes gradient of the neuronal network given an index in the input array
