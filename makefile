@@ -9,11 +9,17 @@ $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES) assignment.h
 
 #compile the input data classes
 BINARY_INPUT_DATA_CLASS_COMPILER_ARGS =-std=c++11 -Wall -c
-binaryInputDataClass.o: ./include/inputData/binaryInputData.cpp ./include/inputData/binaryInputData.h ./include/inputData/inputData.h
+binaryInputDataClass.o: ./include/inputData/binaryInputData.cpp \
+						./include/inputData/binaryInputData.h \
+						./include/inputData/inputData.h \
+						./include/tinyxml2/tinyxml2.h
 	g++ $(BINARY_INPUT_DATA_CLASS_COMPILER_ARGS) -o $@ $<
 
 BINARY_INPUT_DATA_CLASS_COMPILER_ARGS =-std=c++11 -Wall -c -I ./include/tinyxml2
-xmlInputDataClass.o: ./include/inputData/xmlInputData.cpp ./include/inputData/inputData.h ./include/inputData/xmlInputData.h
+xmlInputDataClass.o: ./include/inputData/xmlInputData.cpp \
+					 ./include/inputData/inputData.h \
+					 ./include/inputData/xmlInputData.h \
+					 ./include/tinyxml2/tinyxml2.h
 	g++ $(BINARY_INPUT_DATA_CLASS_COMPILER_ARGS) -o $@ $<
 
 #compile the little tga module
@@ -29,7 +35,7 @@ tinyxml2.o: ./include/tinyxml2/tinyxml2.cpp ./include/tinyxml2/tinyxml2.h
 	
 #downloads tinyxml2 and puts the files in director "include/tinyxml2"
 #TinyXML-2 is a simple, small, efficient, C++ XML parser that can be easily integrated into other programs.
-./include/tinyxml2/tinyxml2.h:
+./include/tinyxml2/tinyxml2.h ./include/tinyxml2/tinyxml2.cpp:
 	wget -q https://raw.githubusercontent.com/leethomason/tinyxml2/master/tinyxml2.h
 	wget -q https://raw.githubusercontent.com/leethomason/tinyxml2/master/tinyxml2.cpp
 	mkdir -p ./include/tinyxml2
@@ -115,6 +121,7 @@ clean_prog:
 clean:
 	rm -f $(OUTPUT_NAME)
 	rm -fr include/tclap
+	rm -fr include/tinyxml2
 	rm -fr data
 	rm -f tgawriter.o
 	rm -f binaryInputDataClass.o
