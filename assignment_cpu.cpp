@@ -393,13 +393,18 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 	this->hiddenLayers = hiddenLayerMultiArg.getValue();
 }
 
-void Assignment::stochasticGradientDescent(int epoch) {
+///////////////////////////////////////////////////////////////
+//trains the neuronal network using stochastic gradient descent
+//epoch: number of samples per epoch
+//numEpochs: number of epochs to train
+///////////////////////////////////////////////////////////////
+void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs) {
 	
 		std::random_device rd;
 		unsigned int random;
-		for (int j = 0; j < 1000; j++) {
+		for (unsigned int j = 0; j < numEpochs; j++) {
 			double entropy = 0.0f;
-			for (int i = 0; i < epoch; i++) {
+			for (unsigned int i = 0; i < epoch; i++) {
 				//random = rd() % this->trainingData->numberOfSamples;
 				random = rd() % 10;
 				//random = 0;
@@ -408,7 +413,7 @@ void Assignment::stochasticGradientDescent(int epoch) {
 			}
 			std::cout << "Entropy: " << entropy << " Epoch " << j << std::endl;
 			
-			int number = random;
+			/*int number = random;
 			for (int i = 0; i < 28; i++) {
 				for (int j = 0; j < 28; j++) {
 					int addr = i*28 + j + 28*28*number;
@@ -440,7 +445,7 @@ void Assignment::stochasticGradientDescent(int epoch) {
 				}			
 			}
 			std::cout << std::endl;
-			std::cout << "guess: " << guess << std::endl;
+			std::cout << "guess: " << guess << std::endl;*/
 		}
 }
 

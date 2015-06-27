@@ -140,5 +140,10 @@ class Assignment {
 		///////////////////////////////////////////////////////////////////////////////
 		float feedForwardCPU(unsigned int indexOfInput);
 
-		void stochasticGradientDescent(int epoch);
+		///////////////////////////////////////////////////////////////
+		//trains the neuronal network using stochastic gradient descent
+		//epoch: number of samples per epoch
+		//numEpochs: number of epochs to train
+		///////////////////////////////////////////////////////////////
+		void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);
 };
