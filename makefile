@@ -63,74 +63,15 @@ tinyxml2.o: ./include/tinyxml2/tinyxml2.cpp ./include/tinyxml2/tinyxml2.h
 	rm tclap-1.2.1.tar.gz
 	rm -r tclap-1.2.1
 
-./data/funct.xml: func_generator.bash
+data: ./data/train-images-idx3-ubyte 	\
+		./data/train-labels-idx1-ubyte	\
+		./data/t10k-images-idx3-ubyte 	\
+		./data/t10k-labels-idx1-ubyte	\
+		./data/func.xml
+
+./data/func.xml: func_generator.bash
 	chmod +x ./func_generator.bash
-	./func_generator.bash ./data/funct.xml 30
-
-NUMBER_OF_SAMPLES=10
-./data/func.xml: makefile
-	echo "<?xml version=\"1.0\"?>" > ./data/func.xml
-	echo "<samples>" >> ./data/func.xml
-	echo "</sampleCount>$(NUMBER_OF_SAMPLES)</sampleCount>" >> ./data/func.xml
-	echo "	<sampleInputCount>2</sampleInputCount>" >> ./data/func.xml
-	echo "	<sampleOutputCount>1</sampleOutputCount>" >> ./data/func.xml
-	echo "<!-- the first samples are x^2 -->" >> ./data/func.xml 
-	for i in `seq 0 $$(($(NUMBER_OF_SAMPLES)-1))`; 										\
-	do																					\
-		echo "	<sample>"	>> ./data/func.xml;											\
-		echo -n "		<sampleInput>" >> ./data/func.xml;								\
-		echo "scale=8;"$$i"/"$$(($(NUMBER_OF_SAMPLES)-1)) | bc | tr -d '\n' >> ./data/func.xml;																				\
-		echo "</sampleInput>" >> ./data/func.xml;										\
-		echo -n "		<sampleInput>" >> ./data/func.xml;								\
-		echo "scale=8;"$$i"/"$$(($(NUMBER_OF_SAMPLES)-1))"^2" | bc | tr -d '\n' >> ./data/func.xml;																				\
-		echo "</sampleInput>" >> ./data/func.xml;										\
-		echo "		<sampleOutput>0</sampleOutput>" >> ./data/func.xml;					\
-		echo "	</sample>" >> ./data/func.xml;											\
-	done; 																				\
-	echo "<!-- these samples are e^x -->" >> ./data/func.xml
-	for i in `seq 0 $$(($(NUMBER_OF_SAMPLES)-1))`; 										\
-	do																					\
-		echo "	<sample>"	>> ./data/func.xml;											\
-		echo -n "		<sampleInput>" >> ./data/func.xml;								\
-		echo "scale=8;"$$i"/"$$(($(NUMBER_OF_SAMPLES)-1)) | bc | tr -d '\n' >> ./data/func.xml;																				\
-		echo "</sampleInput>" >> ./data/func.xml;										\
-		echo -n "		<sampleInput>" >> ./data/func.xml;								\
-		echo "scale=8;e("$$i"/"$$(($(NUMBER_OF_SAMPLES)-1))")" | bc -l | tr -d '\n' >> ./data/func.xml;																\
-		echo "</sampleInput>" >> ./data/func.xml;										\
-		echo "		<sampleOutput>1</sampleOutput>" >> ./data/func.xml;					\
-		echo "	</sample>" >> ./data/func.xml;											\
-	done; 																				\
-	echo "</samples>" >> ./data/func.xml
-
-./data/xor.xml: makefile
-	echo "<?xml version=\"1.0\"?>" > ./data/xor.xml
-	echo "<samples>" >> ./data/xor.xml
-	echo "	<sampleCount>4</sampleCount>" >> ./data/xor.xml
-	echo "	<sampleInputCount>2</sampleInputCount>" >> ./data/xor.xml
-	echo "	<sampleOutputCount>1</sampleOutputCount>" >> ./data/xor.xml
-	echo "	<sample>" >> ./data/xor.xml
-	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleOutput>0</sampleOutput>" >> ./data/xor.xml
-	echo "	</sample>" >> ./data/xor.xml
-	echo "	<sample>" >> ./data/xor.xml
-	echo "		<sampleInput>1</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleOutput>1</sampleOutput>" >> ./data/xor.xml
-	echo "	</sample>" >> ./data/xor.xml
-	echo "	<sample>" >> ./data/xor.xml
-	echo "		<sampleInput>0</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleInput>1</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleOutput>1</sampleOutput>" >> ./data/xor.xml
-	echo "	</sample>" >> ./data/xor.xml
-	echo "	<sample>" >> ./data/xor.xml
-	echo "		<sampleInput>1</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleInput>1</sampleInput>" >> ./data/xor.xml
-	echo "		<sampleOutput>0</sampleOutput>" >> ./data/xor.xml
-	echo "	</sample>" >> ./data/xor.xml
-	echo "</samples>" >> ./data/xor.xml
-
-data: ./data/train-images-idx3-ubyte ./data/train-labels-idx1-ubyte ./data/t10k-images-idx3-ubyte ./data/t10k-labels-idx1-ubyte
+	./func_generator.bash ./data/func.xml 30
 
 # downloads the MNIST data set and puts the files in directory "data"
 # the first few digits: 5 0 4 1 9 2 1 3 1 4
