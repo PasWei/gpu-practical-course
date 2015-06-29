@@ -71,7 +71,7 @@ data: ./data/train-images-idx3-ubyte 	\
 
 ./data/func.xml: func_generator.bash
 	chmod +x ./func_generator.bash
-	./func_generator.bash ./data/func.xml 30
+	./func_generator.bash ./data/func.xml 2
 
 # downloads the MNIST data set and puts the files in directory "data"
 # the first few digits: 5 0 4 1 9 2 1 3 1 4

@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 
 	assign.InitCLResources();
 
-	assign.feedForwardCPU(4);
+	assign.feedForwardCPU(0);
 	assign.feedForwardGPU(0, false);
 
 	assign.ReleaseClResources();

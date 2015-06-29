@@ -217,7 +217,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
 			this->h_CLCommandQueue,
 			this->d_partialResults.back(),
 			CL_TRUE,
-			40 * sizeof(float),
+			0 /*40 * sizeof(float)*/,
 			this->trainingData->numberOfOutputs * sizeof(cl_float),
 			this->h_partialResults.back(),
 			0,
