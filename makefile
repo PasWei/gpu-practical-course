@@ -1,14 +1,20 @@
+#Path to the opencl header files
+OPENCL_INCLUDE_DIRS=/opt/cuda-5.0/include
+
+#Path to the opencl shared library
+OPENCL_LIBRARIES=/usr/lib64/nvidia-304xx/libOpenCL.so.1
+
 #make sure to list tinyxml2 after xmlInputDataClass to avoid compiler errors
 #the g++ compiler flag -g compiles debug symbols into the code
 SOURCE_FILES=main.cpp assignment_cpu.cpp assignment_gpu.cpp tgawriter.o binaryInputDataClass.o xmlInputDataClass.o tinyxml2.o gpu-utils.o
-COMPILER_ARGS=-std=c++11 -g -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2 -I ./include/gpu-practical-course
+COMPILER_ARGS=-std=c++11 -g -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2 -I ./include/gpu-practical-course -I $(OPENCL_INCLUDE_DIRS) 
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES) assignment.h
-	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES) -l OpenCL
+	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES) $(OPENCL_LIBRARIES)
 
 #compile the gpu-pratical-coures utils
-UTILS_COMPILER_ARGS =-std=c++11 -Wall -c
+UTILS_COMPILER_ARGS =-std=c++11 -Wall -c -I $(OPENCL_INCLUDE_DIRS) 
 gpu-utils.o: ./include/gpu-practical-course/CLUtil.cpp ./include/gpu-practical-course/CLUtil.h
 	g++ $(UTILS_COMPILER_ARGS) -o $@ $<
 

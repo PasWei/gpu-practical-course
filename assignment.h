@@ -85,6 +85,7 @@ class Assignment {
 		InputData* trainingData;
 
 		//buffers for input data and labels
+		//TODO: Refactoring: rename with h_
 		float* trainingInputBuffer;
 		float* trainingLabelBuffer;
 
@@ -103,11 +104,22 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
+		const int parallelBackpropagationSize = 5;
+
+		const int localGroupSize = 256;
+
 		//opencl device
-		cl_platform_id		m_CLPlatform;
-		cl_device_id		m_CLDevice;
-		cl_context			m_CLContext;
-		cl_command_queue	m_CLCommandQueue;
+		cl_platform_id		d_CLPlatform;
+		cl_device_id		d_CLDevice;
+		cl_context			d_CLContext;
+		cl_command_queue	d_CLCommandQueue;
+
+		//training data 
+		cl_mem d_trainingInputBuffer;
+		cl_mem d_trainingLabelBuffer;
+
+		//pointers to the weight buffers on the gpu
+		std::vector<cl_mem> d_weightBuffers;
 
 		//learning rate
 		const float learningRate = 0.0001;
@@ -139,6 +151,10 @@ class Assignment {
 	public:
 
 		bool InitCLContext();
+
+		bool InitCLResources();
+
+		void ReleaseClResources();
 
 		void ReleaseCLContext();
 

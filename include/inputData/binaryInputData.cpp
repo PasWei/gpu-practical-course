@@ -88,7 +88,7 @@ uint8_t* BinaryInputData::parseFileToBuffer(std::string filePath) {
 
 void BinaryInputData::printInformation() {
 
-	std::cout << "This is a BinaryInputData instance." << std::endl; 	
+	std::cout << std::endl << "InputData: This is a BinaryInputData instance." << std::endl; 	
 
 	//status of image file
 	std::cout << "loaded binary image file " << this->DataPath << ":";

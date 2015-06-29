@@ -85,7 +85,7 @@ void XMLInputData::getLabelBuffer(float* buffer) {
 }
 
 void XMLInputData::printInformation() {
-	std::cout << "This is a XMLInputData instance." << std::endl;
+	std::cout << std::endl << "InputData: This is a XMLInputData instance." << std::endl;
 	std::cout << "There are " << this->numberOfSamples <<" samples in " << this->filePath
 		 << " with " << this->numberOfInputs << " inputs and " << this->numberOfOutputs << " outputs." << std::endl;	
 }

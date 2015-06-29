@@ -69,7 +69,7 @@ Assignment::Assignment(int argc, char** argv) {
 void Assignment::initWeightBuffer() {
 	
 
-	std::cout << std::endl << "initialize the weight buffers" << std::endl;
+	std::cout << std::endl << "initWeightBuffer(): initialize the weight buffers" << std::endl;
 	
 	//dont forget the constant 1 weights!
 	//the first hidden layer needs the number of input neurons
@@ -110,6 +110,8 @@ void Assignment::initWeightBuffer() {
 ////////////////////////////////////////////////////////////////////////
 void Assignment::randomizeWeights() {
 	
+	std::cout << std::endl << "randomizeWeights(): intializing random weights." << std::endl;
+
 	//random device for unsigned integers
 	std::random_device rd;
 	unsigned int random;

@@ -7,7 +7,61 @@
 
 #define PRINT_INFO(title, buffer, bufferSize, maxBufferSize, expr) { expr; buffer[bufferSize] = '\0'; std::cout << title << ": " << buffer << std::endl; }
 
+bool Assignment::InitCLResources() {
+	
+	std::cout << "InitCLResources(): Initialize the opencl buffers on the device" << std::endl; 
+
+	//clCreateBuffer: context, flags, size, *host_ptr, *error
+
+	cl_int clError;
+
+	//training data
+	d_trainingInputBuffer = clCreateBuffer(
+		this->d_CLContext,
+		CL_MEM_READ_ONLY,
+		sizeof(float) * this->trainingData->numberOfSamples * this->trainingData->numberOfInputs,
+		this->trainingInputBuffer,
+		&clError
+	);
+	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_trainingInputBuffer");
+
+	d_trainingLabelBuffer = clCreateBuffer(
+		this->d_CLContext,
+		CL_MEM_READ_ONLY,
+		sizeof(float) * this->trainingData->numberOfSamples * this->trainingData->numberOfOutputs,
+		this->trainingLabelBuffer,
+		&clError
+	);
+	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_trainingLabelBuffer");
+
+	//weight buffers
+	for (unsigned int i = 0; i < this->sizeOfWeightBuffer.size(); i++) {
+		this->d_weightBuffers.push_back(
+			clCreateBuffer(
+				this->d_CLContext,
+				CL_MEM_READ_WRITE,
+				sizeof(float) * this->sizeOfWeightBuffer[i],
+				this->h_weightBuffers[i],
+				&clError
+			)
+		);
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_trainingLabelBuffer[]"); 		
+	}
+
+	return true;
+}
+
+void Assignment::ReleaseClResources() {
+	SAFE_RELEASE_MEMOBJECT(d_trainingInputBuffer);
+	SAFE_RELEASE_MEMOBJECT(d_trainingLabelBuffer);
+	for (unsigned int i = 0; i < this->d_weightBuffers.size(); i++) {
+		SAFE_RELEASE_MEMOBJECT(this->d_weightBuffers[i]);
+	}
+}
+
 bool Assignment::InitCLContext() {
+
+	std::cout << std::endl << "InitCLContext():" << std::endl;
 	// 1. get all platform IDs
 	std::vector<cl_platform_id> platformIds;
 	const cl_uint c_MaxPlatforms = 16;
@@ -42,8 +96,8 @@ bool Assignment::InitCLContext() {
 		return false;
 	}
 	// Choosing the first available device.
-	m_CLDevice = deviceIds[0];
-	clGetDeviceInfo(m_CLDevice, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &m_CLPlatform, NULL);
+	this->d_CLDevice = deviceIds[0];
+	clGetDeviceInfo(this->d_CLDevice, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &this->d_CLPlatform, NULL);
 
 	// Printing platform and device data.
 	const int maxBufferSize = 1024;
@@ -57,7 +111,7 @@ bool Assignment::InitCLContext() {
 		bufferSize,
 		maxBufferSize,
 		clGetPlatformInfo(
-			m_CLPlatform,
+			this->d_CLPlatform,
 			CL_PLATFORM_NAME,
 			maxBufferSize,
 			(void*)buffer,
@@ -71,7 +125,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetPlatformInfo(
-			m_CLPlatform, 
+			this->d_CLPlatform, 
 			CL_PLATFORM_VENDOR, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -85,7 +139,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetPlatformInfo(
-			m_CLPlatform, 
+			this->d_CLPlatform, 
 			CL_PLATFORM_VERSION, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -99,7 +153,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetPlatformInfo(
-			m_CLPlatform, 
+			this->d_CLPlatform, 
 			CL_PLATFORM_PROFILE, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -115,7 +169,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetDeviceInfo(
-			m_CLDevice, 
+			this->d_CLDevice, 
 			CL_DEVICE_NAME, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -129,7 +183,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetDeviceInfo(
-			m_CLDevice, 
+			this->d_CLDevice, 
 			CL_DEVICE_VENDOR, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -143,7 +197,7 @@ bool Assignment::InitCLContext() {
 		bufferSize, 
 		maxBufferSize, 
 		clGetDeviceInfo(
-			m_CLDevice, 
+			this->d_CLDevice, 
 			CL_DRIVER_VERSION, 
 			maxBufferSize, 
 			(void*)buffer, 
@@ -153,7 +207,7 @@ bool Assignment::InitCLContext() {
 
 	cl_ulong localMemorySize;
 	clGetDeviceInfo(
-		m_CLDevice, 
+		this->d_CLDevice, 
 		CL_DEVICE_LOCAL_MEM_SIZE, 
 		sizeof(cl_ulong), 
 		&localMemorySize, 
@@ -165,29 +219,29 @@ bool Assignment::InitCLContext() {
         
 	cl_int clError;
 
-	m_CLContext = clCreateContext(NULL, 1, &m_CLDevice, NULL, NULL, &clError);	
+	this->d_CLContext = clCreateContext(NULL, 1, &this->d_CLDevice, NULL, NULL, &clError);	
 	V_RETURN_FALSE_CL(clError, "Failed to create OpenCL context.");
 
 	// Finally, create a command queue. All the asynchronous commands to the device will be issued
 	// from the CPU into this queue. This way the host program can continue the execution
 	// until some results from that device are needed.
 
-	m_CLCommandQueue = clCreateCommandQueue(m_CLContext, m_CLDevice, 0, &clError);
+	this->d_CLCommandQueue = clCreateCommandQueue(this->d_CLContext, this->d_CLDevice, 0, &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create the command queue in the context");
 
 	return true;
 }
 
 void Assignment::ReleaseCLContext() {
-	if (m_CLCommandQueue != nullptr)
+	if (this->d_CLCommandQueue != nullptr)
 	{
-		clReleaseCommandQueue(m_CLCommandQueue);
-		m_CLCommandQueue = nullptr;
+		clReleaseCommandQueue(this->d_CLCommandQueue);
+		this->d_CLCommandQueue = nullptr;
 	}
 
-	if (m_CLContext != nullptr)
+	if (this->d_CLContext != nullptr)
 	{
-		clReleaseContext(m_CLContext);
-		m_CLContext = nullptr;
+		clReleaseContext(this->d_CLContext);
+		this->d_CLContext = nullptr;
 	}
 }

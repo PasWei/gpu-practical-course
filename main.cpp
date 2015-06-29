@@ -10,6 +10,11 @@ int main(int argc, char** argv)
 	//assign.stochasticGradientDescentCPU(60000, 100);
 
 	assign.InitCLContext();
+
+	assign.InitCLResources();
+
+	assign.ReleaseClResources();
+
 	assign.ReleaseCLContext();
 
 	std::cout << std::endl;
