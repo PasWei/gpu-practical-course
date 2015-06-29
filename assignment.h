@@ -75,6 +75,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <CL/cl.h>
 
 #include "inputData.h"
 
@@ -101,6 +102,12 @@ class Assignment {
 
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
+
+		//opencl device
+		cl_platform_id		m_CLPlatform;
+		cl_device_id		m_CLDevice;
+		cl_context			m_CLContext;
+		cl_command_queue	m_CLCommandQueue;
 
 		//learning rate
 		const float learningRate = 0.0001;
@@ -130,6 +137,10 @@ class Assignment {
 		void backPropagationCPU(unsigned int indexOfInput);
 
 	public:
+
+		bool InitCLContext();
+
+		void ReleaseCLContext();
 
 		Assignment(int argc, char** argv);
 		~Assignment();

@@ -1,11 +1,16 @@
 #make sure to list tinyxml2 after xmlInputDataClass to avoid compiler errors
 #the g++ compiler flag -g compiles debug symbols into the code
-SOURCE_FILES=main.cpp assignment_cpu.cpp tgawriter.o binaryInputDataClass.o xmlInputDataClass.o tinyxml2.o
-COMPILER_ARGS=-std=c++11 -g -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2
+SOURCE_FILES=main.cpp assignment_cpu.cpp assignment_gpu.cpp tgawriter.o binaryInputDataClass.o xmlInputDataClass.o tinyxml2.o gpu-utils.o
+COMPILER_ARGS=-std=c++11 -g -Wall -B ./ -I ./include/tgawriter -I ./include/inputData -I ./include/tinyxml2 -I ./include/gpu-practical-course
 OUTPUT_NAME=assignment
 
 $(OUTPUT_NAME): makefile ./include/tclap/CmdLine.h $(SOURCE_FILES) assignment.h
-	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES)
+	g++ $(COMPILER_ARGS) -o $(OUTPUT_NAME) $(SOURCE_FILES) -l OpenCL
+
+#compile the gpu-pratical-coures utils
+UTILS_COMPILER_ARGS =-std=c++11 -Wall -c
+gpu-utils.o: ./include/gpu-practical-course/CLUtil.cpp ./include/gpu-practical-course/CLUtil.h
+	g++ $(UTILS_COMPILER_ARGS) -o $@ $<
 
 #compile the input data classes
 BINARY_INPUT_DATA_CLASS_COMPILER_ARGS =-std=c++11 -Wall -c
@@ -113,10 +118,7 @@ data: ./data/train-images-idx3-ubyte ./data/train-labels-idx1-ubyte ./data/t10k-
 
 clean_prog:
 	rm -f $(OUTPUT_NAME)
-	rm -f tgawriter.o
-	rm -f binaryInputDataClass.o
-	rm -f xmlInputDataClass.o
-	rm -f tinyxml2.o
+	rm -f *.o
 	rm -f assignment
 
 clean:
@@ -124,8 +126,5 @@ clean:
 	rm -fr include/tclap
 	rm -fr include/tinyxml2
 	rm -fr data
-	rm -f tgawriter.o
-	rm -f binaryInputDataClass.o
-	rm -f xmlInputDataClass.o
-	rm -f tinyxml2.o
+	rm -f *.o
 	rm -f assignment
