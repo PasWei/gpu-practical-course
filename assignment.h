@@ -106,13 +106,19 @@ class Assignment {
 
 		const int parallelBackpropagationSize = 5;
 
-		const int localGroupSize = 256;
+		const int localGroupSize = 32;
 
 		//opencl device
-		cl_platform_id		d_CLPlatform;
-		cl_device_id		d_CLDevice;
-		cl_context			d_CLContext;
-		cl_command_queue	d_CLCommandQueue;
+		cl_platform_id		h_CLPlatform;
+		cl_device_id		h_CLDevice;
+		cl_context			h_CLContext;
+		cl_command_queue	h_CLCommandQueue;
+
+		//the program
+		cl_program h_Program;
+
+		//feed forward kernel
+		cl_kernel h_feedForwardKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
@@ -120,6 +126,9 @@ class Assignment {
 
 		//pointers to the weight buffers on the gpu
 		std::vector<cl_mem> d_weightBuffers;
+
+		//pointers to the partial results of feed forward on the gpu
+		std::vector<cl_mem> d_partialResults;
 
 		//learning rate
 		const float learningRate = 0.0001;
@@ -155,6 +164,8 @@ class Assignment {
 		bool InitCLResources();
 
 		void ReleaseClResources();
+
+		void feedForwardGPU(unsigned int indexOfInput, bool singleInput);
 
 		void ReleaseCLContext();
 

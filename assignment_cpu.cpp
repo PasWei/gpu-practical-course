@@ -34,6 +34,7 @@ Assignment::Assignment(int argc, char** argv) {
 	
 	this->initWeightBuffer();
 	this->randomizeWeights();
+
 	//this code displays one image from the mnist set as ascii art and the corresponding label	
 
 	/*for (int k = 0; k < 10; k++) {
@@ -130,6 +131,13 @@ void Assignment::randomizeWeights() {
 			this->h_weightBuffers[i][j] = sign * (((float) rd()) / ((float) rd.max()));
 		}
 	}
+
+	/*std::cout << "first ten weights in cpu buffer (level 0): ";
+	for (int i = 0; i < 10; i++) {
+		std::cout << this->h_weightBuffers[0][i] << " ";
+	}
+	std::cout << std::endl;*/
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,8 +185,6 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 				} else {
 					sum += this->h_partialResults[i-1][k] * this->h_weightBuffers[i][k * numNeurons + j];
 				}
-				//std::cout << "i: " << i << " j: " << j << " k: " << k << " input: " << buf1[k] << " weight: " <<
-				//	h_weightBuffers[i][k * numNeurons + j] << " sum: " << sum << " inputSize: " << inputSize << std::endl;
 			}
 			//the constant one
 			sum += h_weightBuffers[i][inputSize * numNeurons + j];
@@ -198,12 +204,13 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 			} else {
 				this->h_partialResults[i][j] = sum;
 			}
-
-			/*if (this->h_partialResults[i][j] != this->h_partialResults[i][j]) {
-					std::cout << "this->h_partialResults[i][j] is not a number! for i = " << i << " and j = " << j << std::endl;
-			}*/
-
 		}
+
+		/*std::cout << "Output of the neuronal network (layer " << i << "): ";
+		for (int j = 0; j < numNeurons; j++) {
+			std::cout << this->h_partialResults[i][j] << " "; 
+		}
+		std::cout << std::endl;*/
 
  		//set the correct number of inputs for the next layer
 		inputSize = numNeurons;
@@ -227,11 +234,11 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	}
 
 	//output the values
-	/*std::cout << "Output of the neuronal network: ";
+	std::cout << "Output of the neuronal network (CPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
 	
 	return crossEntropy;
 }
