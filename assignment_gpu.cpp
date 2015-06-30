@@ -91,10 +91,10 @@ bool Assignment::InitCLResources() {
 	return true;
 }
 
-void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
+void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
 	
 	int inputIndex = this->trainingData->numberOfInputs * indexOfInput;
-	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
+	//int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
 
 	cl_int clError;
 
@@ -165,12 +165,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
 
 		//calculate local and global work size
 		size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
-		size_t GlobalWorkSize;
-		if (singleInput) {
-			GlobalWorkSize = threadsPerInputVector;
-		} else {
-			GlobalWorkSize = threadsPerInputVector * this->parallelBackpropagationSize;
-		}
+		size_t GlobalWorkSize = threadsPerInputVector * numInputVectors;
 
 		//launch the kernel
 		clError = clEnqueueNDRangeKernel(
@@ -212,12 +207,12 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
 	}
 
 	//read back the result and print it
-	V_RETURN_CL(
+	/*V_RETURN_CL(
 		clEnqueueReadBuffer(
 			this->h_CLCommandQueue,
 			this->d_partialResults.back(),
 			CL_TRUE,
-			0/*40 * sizeof(float)*/,
+			0,
 			this->trainingData->numberOfOutputs * sizeof(cl_float),
 			this->h_partialResults.back(),
 			0,
@@ -225,11 +220,11 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
 			NULL
 		), 
 		"Error reading data from device!"
-	);
+	);*/
 
 	//compute the actual output (softmax activation function)
 	//compute sum of exponents for softmax
-	float expSum = 0.0f;
+	/*float expSum = 0.0f;
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		expSum += std::exp(this->h_partialResults.back()[i]);
 	}
@@ -242,14 +237,14 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput, bool singleInput) {
 		float target = this->trainingLabelBuffer[labelIndex + i];
 		float output = this->h_partialResults.back()[i];
 		crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
-	}
+	}*/
 
 	//output the values
-	std::cout << "Output of the neuronal network (GPU): ";
+	/*std::cout << "Output of the neuronal network (GPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 }
 
 void Assignment::ReleaseClResources() {

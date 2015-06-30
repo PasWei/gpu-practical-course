@@ -104,9 +104,9 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
-		const int parallelBackpropagationSize = 5;
+		const int parallelBackpropagationSize = 60;
 
-		const int localGroupSize = 32;
+		const int localGroupSize = 128;
 
 		//opencl device
 		cl_platform_id		h_CLPlatform;
@@ -165,7 +165,7 @@ class Assignment {
 
 		void ReleaseClResources();
 
-		void feedForwardGPU(unsigned int indexOfInput, bool singleInput);
+		void feedForwardGPU(unsigned int indexOfInput, unsigned int numInputVectors);
 
 		void ReleaseCLContext();
 
