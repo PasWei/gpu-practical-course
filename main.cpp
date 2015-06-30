@@ -20,22 +20,22 @@ int main(int argc, char** argv)
 
 
 
-	timerCPU.Start();
-	for (int i = 0; i < 1000; i++) {
+	//timerCPU.Start();
+	//for (int i = 0; i < 1000; i++) {
 		assign.feedForwardCPU(0);
-	}
-	timerCPU.Stop();
-	std::cout << "GPU time: " << timerCPU.GetElapsedMilliseconds() << std::endl;
+	//}
+	//timerCPU.Stop();
+	//std::cout << "GPU time: " << timerCPU.GetElapsedMilliseconds() << std::endl;
 	
 
-	timerGPU.Start();
-	for (int i = 0; i < 1000; i++) {
-		assign.feedForwardGPU(0, 60);
-	}
-	timerGPU.Stop();
-	std::cout << "GPU time: " << timerGPU.GetElapsedMilliseconds() << std::endl;
+	//timerGPU.Start();
+	//for (int i = 0; i < 1000; i++) {
+		assign.feedForwardGPU(0, 1);
+	//}
+	//timerGPU.Stop();
+	//std::cout << "GPU time: " << timerGPU.GetElapsedMilliseconds() << std::endl;
 	
-	std::cout << "speedup: " << timerCPU.GetElapsedMilliseconds()/timerGPU.GetElapsedMilliseconds() << std::endl;
+	//std::cout << "speedup: " << timerCPU.GetElapsedMilliseconds()/timerGPU.GetElapsedMilliseconds() << std::endl;
 
 
 	assign.ReleaseClResources();

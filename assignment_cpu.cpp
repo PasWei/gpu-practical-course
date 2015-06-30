@@ -234,11 +234,11 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	}
 
 	//output the values
-	/*std::cout << "Output of the neuronal network (CPU): ";
+	std::cout << "Output of the neuronal network (CPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
 	
 	return crossEntropy;
 }

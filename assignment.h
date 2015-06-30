@@ -104,7 +104,7 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
-		const int parallelBackpropagationSize = 60;
+		const int parallelBackpropagationSize = 5;
 
 		const int localGroupSize = 128;
 
@@ -117,8 +117,9 @@ class Assignment {
 		//the program
 		cl_program h_Program;
 
-		//feed forward kernel
+		//kernel
 		cl_kernel h_feedForwardKernel;
+		cl_kernel h_softMaxKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;

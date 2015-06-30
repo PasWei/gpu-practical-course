@@ -86,6 +86,9 @@ bool Assignment::InitCLResources() {
 	h_feedForwardKernel = clCreateKernel(this->h_Program, "feedForward", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: feedForward.");
 
+	h_softMaxKernel = clCreateKernel(this->h_Program, "softMax", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: softMax.");
+
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
 	return true;
@@ -93,18 +96,24 @@ bool Assignment::InitCLResources() {
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
 	
+	if (numInputVectors > this->parallelBackpropagationSize) {
+		std::cout << "buffer for feedForward too small!" << std::endl;
+		return;
+	}
+
 	int inputIndex = this->trainingData->numberOfInputs * indexOfInput;
 	//int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
 
 	cl_int clError;
+
+	//determine the number of neurons
+	int numNeurons;
 
 	for (unsigned int i = 0; i < this->d_partialResults.size(); i++) {
 		//determine the number of inputs
 		int inputSize;
 		//offset in case the input buffer is needed
 		int inputOffset = 0;
-		//determine the number of neurons
-		int numNeurons;
 		//Argument 0: the weight buffer
 		clError = clSetKernelArg(h_feedForwardKernel, 0, sizeof(cl_mem), (void*)&this->d_weightBuffers[i]);
 		//Argument 1: the input buffer 
@@ -161,7 +170,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		clError |= clSetKernelArg(h_feedForwardKernel, 7, sizeof(cl_int), (void*)&useActivationFunction);
 		//Argument 8: the input cache
 		clError |= clSetKernelArg(h_feedForwardKernel, 8, inputSize * sizeof(cl_float), NULL);
-		V_RETURN_CL(clError, "Failed to set kernel args: h_feedForwardKernel");
+		V_RETURN_CL(clError, "Failed to set kernel args: feedForwardKernel");
 
 		//calculate local and global work size
 		size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
@@ -179,7 +188,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 			NULL, 
 			NULL
 		);
-		V_RETURN_CL(clError, "Error executing kernel!");
+		V_RETURN_CL(clError, "Error executing feedForwardKernel!");
 
 		//read back the result and print it for debug purposes
 		/*V_RETURN_CL(
@@ -206,13 +215,38 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 
 	}
 
+	//set up the softMax kernel
+	//Argument 0: the output buffer
+	clError = clSetKernelArg(h_softMaxKernel, 0, sizeof(cl_mem), (void*)&this->d_partialResults.back());
+	//Argument 1: number of neurons
+	clError |= clSetKernelArg(h_softMaxKernel, 1, sizeof(cl_int), (void*)&numNeurons);
+	//Argument 2: the sum cache
+	clError |= clSetKernelArg(h_softMaxKernel, 2, numNeurons * sizeof(cl_float), NULL);
+	V_RETURN_CL(clError, "Failed to set kernel args: softMaxKernel");
+	//calculate local and global work size
+	size_t LocalWorkSize[3] = {(size_t)numNeurons, 1, 1};
+	size_t GlobalWorkSize = numNeurons * numInputVectors;
+	//launch the kernel
+		clError = clEnqueueNDRangeKernel(
+			this->h_CLCommandQueue, 
+			this->h_softMaxKernel, 
+			1, 
+			NULL, 
+			&GlobalWorkSize, 
+			LocalWorkSize, 
+			0, 
+			NULL, 
+			NULL
+		);
+	V_RETURN_CL(clError, "Error executing feedForwardKernel!");
+
 	//read back the result and print it
-	/*V_RETURN_CL(
+	V_RETURN_CL(
 		clEnqueueReadBuffer(
 			this->h_CLCommandQueue,
 			this->d_partialResults.back(),
 			CL_TRUE,
-			0,
+			0/*40 * sizeof(cl_float)*/,
 			this->trainingData->numberOfOutputs * sizeof(cl_float),
 			this->h_partialResults.back(),
 			0,
@@ -220,7 +254,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 			NULL
 		), 
 		"Error reading data from device!"
-	);*/
+	);
 
 	//compute the actual output (softmax activation function)
 	//compute sum of exponents for softmax
@@ -240,11 +274,11 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 	}*/
 
 	//output the values
-	/*std::cout << "Output of the neuronal network (GPU): ";
+	std::cout << "Output of the neuronal network (GPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
 }
 
 void Assignment::ReleaseClResources() {
@@ -257,6 +291,7 @@ void Assignment::ReleaseClResources() {
 
 	//release kernels
 	SAFE_RELEASE_KERNEL(this->h_feedForwardKernel);
+	SAFE_RELEASE_KERNEL(this->h_softMaxKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);

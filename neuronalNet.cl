@@ -63,9 +63,50 @@ __kernel void feedForward(
 	outputBuffer[6] = (float) numNeurons;
 	outputBuffer[7] = (float) threadsPerInputVector;
 	outputBuffer[8] = (float) inputBufferOffset;
-	outputBuffer[9] = (float) useActivationFunction;*/
+	outputBuffer[9] = (float) useActivationFunction;*/	
+}
 
-	//try without input cache first TODO: use caching!
+//this kernel assumes that the size of the input vector is smaller than the work group size
+__kernel void softMax(__global float* outputBuffer, const uint numNeurons, __local float* sumCache) {
+	//get IDs
+	uint GID = get_global_id(0);
+	uint LID = get_local_id(0);
+
+	uint inputVectorNumber = get_group_id(0);
+
+	//copy the values to local memory and exp() them
+	if (LID < numNeurons) {
+		sumCache[LID] = exp(outputBuffer[LID + inputVectorNumber * numNeurons]);
+	}
+	 
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	uint leftOver = numNeurons % 2;
+	uint numThreads = numNeurons / 2;
 	
+	while (numThreads >= 1) {
+		if (LID < numThreads-1) {
+			sumCache[LID] = sumCache[2 * LID] + sumCache[2 * LID + 1]; 
+		}
+		if (LID == numThreads-1) {
+			if (leftOver == 1) {
+				sumCache[LID] = sumCache[2 * LID] + sumCache[2 * LID + 1] + sumCache[2 * LID + 2]; 
+			} else {
+				sumCache[LID] = sumCache[2 * LID] + sumCache[2 * LID + 1];
+			}
+		}
+		
+		leftOver = numThreads % 2;
+		numThreads = numThreads / 2;		
+
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
+
+	//the sum is stored in sumCache[0]
+	if (LID < numNeurons) {
+		outputBuffer[LID + inputVectorNumber * numNeurons] =
+			exp(outputBuffer[LID + inputVectorNumber * numNeurons]) / sumCache[0];
+	}
+
 }
 
