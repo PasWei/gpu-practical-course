@@ -112,3 +112,13 @@ __kernel void softMax(__global float* outputBuffer, const uint numNeurons, __loc
 
 }
 
+//this kernel writes a zero to every position in the buffer
+__kernel void zeroBuffer(__global float* buffer, uint len) {
+	
+	uint GID = get_global_id(0);
+
+	if (GID < len) { 
+		buffer[GID] = 0.0f;
+	}
+
+}

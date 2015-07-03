@@ -112,9 +112,90 @@ bool Assignment::InitCLResources() {
 	h_softMaxKernel = clCreateKernel(this->h_Program, "softMax", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: softMax.");
 
+	h_zeroBufferKernel = clCreateKernel(this->h_Program, "zeroBuffer", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: zeroBuffer.");
+
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
 	return true;
+}
+
+void Assignment::zeroDeltaBuffers() {
+	
+	cl_int clError;
+
+	//determine the number of neurons
+	int numNeurons;
+
+	int bufferLength;
+
+	for (unsigned int i = 0; i < this->d_deltaUpdates.size(); i++) {
+		//get the number of neurons
+		if (i == this->d_deltaUpdates.size() - 1) {
+			numNeurons = this->trainingData->numberOfOutputs;
+		} else {
+			numNeurons = this->hiddenLayers[i];
+		} 
+
+		//set arguments
+		//Argument 0: the buffer to write zeroes into
+		clError = clSetKernelArg(h_zeroBufferKernel, 0, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i]);
+		
+		//Argument 1: buffer length
+		bufferLength = this->parallelBackpropagationSize * numNeurons;
+		clError |= clSetKernelArg(h_zeroBufferKernel, 1, sizeof(cl_int), (void*)&bufferLength);
+		V_RETURN_CL(clError, "Failed to set kernel args: zeroBufferKernel");
+
+		//calculate local and global work size
+		size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
+		int numWorkGroups = (bufferLength / this->localGroupSize) + 1;
+		size_t GlobalWorkSize = numWorkGroups * this->localGroupSize;
+
+		std::cout << "GlobalWorkSize: " << GlobalWorkSize << std::endl;
+		std::cout << "bufferLength: " << bufferLength << std::endl;
+
+		//launch the kernel
+		clError = clEnqueueNDRangeKernel(
+			this->h_CLCommandQueue, 
+			this->h_zeroBufferKernel, 
+			1, 
+			NULL, 
+			&GlobalWorkSize, 
+			LocalWorkSize, 
+			0, 
+			NULL, 
+			NULL
+		);
+		V_RETURN_CL(clError, "Error executing zeroBufferKernel!");
+
+		//read back the buffer to test if its 0:
+		/*float* tmpBuff = new float[bufferLength];
+
+		V_RETURN_CL(
+			clEnqueueReadBuffer(
+				this->h_CLCommandQueue,
+				this->d_deltaUpdates[i],
+				CL_TRUE,
+				0,
+				bufferLength * sizeof(float),
+				tmpBuff,
+				0,
+				NULL,
+				NULL
+			), 
+			"Error reading data from device!"
+		);
+
+		//print it
+		std::cout << "The buffer " << i << " should be zeroed: ";  
+		for (int j = 0; j < bufferLength; j++) {
+			std::cout << tmpBuff[j] << " ";
+		}
+		std::cout << std::endl;
+		
+		//delete the tmp buffer
+		delete[] tmpBuff;*/
+	}
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
@@ -311,6 +392,7 @@ void Assignment::ReleaseClResources() {
 	//release kernels
 	SAFE_RELEASE_KERNEL(this->h_feedForwardKernel);
 	SAFE_RELEASE_KERNEL(this->h_softMaxKernel);
+	SAFE_RELEASE_KERNEL(this->h_zeroBufferKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);

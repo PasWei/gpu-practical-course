@@ -37,6 +37,7 @@ int main(int argc, char** argv)
 	
 	//std::cout << "speedup: " << timerCPU.GetElapsedMilliseconds()/timerGPU.GetElapsedMilliseconds() << std::endl;
 
+	assign.zeroDeltaBuffers();
 
 	assign.ReleaseClResources();
 

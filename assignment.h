@@ -120,6 +120,7 @@ class Assignment {
 		//kernel
 		cl_kernel h_feedForwardKernel;
 		cl_kernel h_softMaxKernel;
+		cl_kernel h_zeroBufferKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
@@ -166,6 +167,8 @@ class Assignment {
 		bool InitCLContext();
 
 		bool InitCLResources();
+
+		void zeroDeltaBuffers();
 
 		void ReleaseClResources();
 
