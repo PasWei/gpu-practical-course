@@ -79,11 +79,13 @@ __kernel void softMax(__global float* outputBuffer, const uint numNeurons, __loc
 		sumCache[LID] = exp(outputBuffer[LID + inputVectorNumber * numNeurons]);
 	}
 	 
+	//wait for all threads 
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	uint leftOver = numNeurons % 2;
 	uint numThreads = numNeurons / 2;
 	
+	//add two values
 	while (numThreads >= 1) {
 		if (LID < numThreads-1) {
 			sumCache[LID] = sumCache[2 * LID] + sumCache[2 * LID + 1]; 

@@ -104,7 +104,7 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
-		const int parallelBackpropagationSize = 5;
+		const unsigned int parallelBackpropagationSize = 5;
 
 		const int localGroupSize = 128;
 

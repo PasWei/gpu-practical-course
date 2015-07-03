@@ -256,14 +256,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		"Error reading data from device!"
 	);
 
-	//compute the actual output (softmax activation function)
-	//compute sum of exponents for softmax
-	/*float expSum = 0.0f;
-	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		expSum += std::exp(this->h_partialResults.back()[i]);
-	}
-
-	float crossEntropy = 0.0f;
+	/*float crossEntropy = 0.0f;
 
 	//compute the output
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
@@ -282,6 +275,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 }
 
 void Assignment::ReleaseClResources() {
+
 	SAFE_RELEASE_MEMOBJECT(d_trainingInputBuffer);
 	SAFE_RELEASE_MEMOBJECT(d_trainingLabelBuffer);
 	for (unsigned int i = 0; i < this->d_weightBuffers.size(); i++) {
