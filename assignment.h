@@ -131,6 +131,9 @@ class Assignment {
 		//pointers to the partial results of feed forward on the gpu
 		std::vector<cl_mem> d_partialResults;
 
+		//pointers to the partial results of feed forward on the gpu
+		std::vector<cl_mem> d_deltaUpdates;
+
 		//learning rate
 		const float learningRate = 0.0001;
 

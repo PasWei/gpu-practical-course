@@ -45,11 +45,12 @@ bool Assignment::InitCLResources() {
 				&clError
 			)
 		);
-		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_weightBuffers[]"); 		
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_weightBuffers[]"); 	
 	}
 
-	//partial result buffers
+	//partial result buffers and delta update buffers
 	for (unsigned int i = 0; i < this->hiddenLayers.size(); i++) {
+		//weight buffer
 		this->d_partialResults.push_back(
 			clCreateBuffer(
 				this->h_CLContext,
@@ -59,9 +60,21 @@ bool Assignment::InitCLResources() {
 				&clError
 			)
 		);
-		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_partialResults[]"); 		
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_partialResults[]");
+		//update buffer
+		this->d_deltaUpdates.push_back(
+			clCreateBuffer(
+				this->h_CLContext,
+				CL_MEM_READ_WRITE,
+				sizeof(float) * this->hiddenLayers[i] * this->parallelBackpropagationSize,
+				NULL,
+				&clError
+			)
+		);
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer h_deltaUpdates[]");	
 	}
-
+	//output layer
+	//weight buffer
 	this->d_partialResults.push_back(
 		clCreateBuffer(
 			this->h_CLContext,
@@ -71,8 +84,18 @@ bool Assignment::InitCLResources() {
 			&clError
 		)
 	);
-		
 	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_partialResults[]");
+	//update buffer
+	this->d_deltaUpdates.push_back(
+		clCreateBuffer(
+			this->h_CLContext,
+			CL_MEM_READ_WRITE,
+			sizeof(float) * this->trainingData->numberOfOutputs * this->parallelBackpropagationSize,
+			NULL,
+			&clError
+		)
+	);
+	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_deltaUpdates[]");
 
 	//load and compile kernels
 	std::string programCode;
@@ -276,11 +299,13 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 
 void Assignment::ReleaseClResources() {
 
+	//release buffers
 	SAFE_RELEASE_MEMOBJECT(d_trainingInputBuffer);
 	SAFE_RELEASE_MEMOBJECT(d_trainingLabelBuffer);
 	for (unsigned int i = 0; i < this->d_weightBuffers.size(); i++) {
 		SAFE_RELEASE_MEMOBJECT(this->d_weightBuffers[i]);
 		SAFE_RELEASE_MEMOBJECT(this->d_partialResults[i]);
+		SAFE_RELEASE_MEMOBJECT(this->d_deltaUpdates[i]);
 	}
 
 	//release kernels
