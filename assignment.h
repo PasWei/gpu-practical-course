@@ -121,6 +121,7 @@ class Assignment {
 		cl_kernel h_feedForwardKernel;
 		cl_kernel h_softMaxKernel;
 		cl_kernel h_zeroBufferKernel;
+		cl_kernel h_gradientDescentOutputLayerKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
@@ -169,6 +170,8 @@ class Assignment {
 		bool InitCLResources();
 
 		void zeroDeltaBuffers();
+
+		void gradientDescentGPU(unsigned int indexOfInput, unsigned int numInputVectors);
 
 		void ReleaseClResources();
 

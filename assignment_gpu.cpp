@@ -115,6 +115,9 @@ bool Assignment::InitCLResources() {
 	h_zeroBufferKernel = clCreateKernel(this->h_Program, "zeroBuffer", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: zeroBuffer.");
 
+	h_gradientDescentOutputLayerKernel = clCreateKernel(this->h_Program, "gradientDescentOutputLayer", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: gradientDescentOutputLayer.");
+
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
 	return true;
@@ -151,8 +154,8 @@ void Assignment::zeroDeltaBuffers() {
 		int numWorkGroups = (bufferLength / this->localGroupSize) + 1;
 		size_t GlobalWorkSize = numWorkGroups * this->localGroupSize;
 
-		std::cout << "GlobalWorkSize: " << GlobalWorkSize << std::endl;
-		std::cout << "bufferLength: " << bufferLength << std::endl;
+		//std::cout << "GlobalWorkSize: " << GlobalWorkSize << std::endl;
+		//std::cout << "bufferLength: " << bufferLength << std::endl;
 
 		//launch the kernel
 		clError = clEnqueueNDRangeKernel(
@@ -196,6 +199,66 @@ void Assignment::zeroDeltaBuffers() {
 		//delete the tmp buffer
 		delete[] tmpBuff;*/
 	}
+}
+
+void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numInputVectors) {
+
+	//sanity check
+	if (numInputVectors > this->parallelBackpropagationSize) {
+		std::cout << "buffer for gradinetDescent too small!" << std::endl;
+		return;
+	}
+
+	//error handling for openCL
+	cl_int clError;
+
+	//compute index in label buffer
+	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
+	//int inputIndex = this->trainingData->numberOfInputs * indexOfInput;	
+
+	//the output layer first
+	//Argument 0: the label buffer
+	clError = clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 0, sizeof(cl_mem), (void*)&this->d_trainingLabelBuffer);
+	//Argument 1: the result buffer
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 1, sizeof(cl_mem), (void*)&this->d_partialResults.back());		
+	//Argument 2: the delta update buffer
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 2, sizeof(cl_mem), (void*)&this->d_deltaUpdates.back());
+	//Argument 3: the label buffer offset
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 3, sizeof(cl_int), (void*)&labelIndex);
+	//Argument 4: the number of neurons
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 4, sizeof(cl_int), (void*)&this->trainingData->numberOfOutputs);
+	//Argument 5: the the number of threads per input vector
+	int threadsPerInputVector = this->trainingData->numberOfOutputs/this->localGroupSize;
+		if (this->trainingData->numberOfOutputs % this->localGroupSize != 0) {
+			threadsPerInputVector++;
+		}
+	//inputSize/this->localGroupSize is always a multiple of localGroupSize
+	threadsPerInputVector = threadsPerInputVector*this->localGroupSize;
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 5, sizeof(cl_int), (void*)&threadsPerInputVector);
+
+	//calculate local and global work size
+	size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
+	size_t GlobalWorkSize = threadsPerInputVector * numInputVectors;
+
+	//launch the kernel
+	clError = clEnqueueNDRangeKernel(
+		this->h_CLCommandQueue, 
+		this->h_gradientDescentOutputLayerKernel, 
+		1, 
+		NULL, 
+		&GlobalWorkSize, 
+		LocalWorkSize, 
+		0, 
+		NULL, 
+		NULL
+	);
+	V_RETURN_CL(clError, "Error executing gradientDescentOutputLayerKernel!");
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
@@ -393,6 +456,7 @@ void Assignment::ReleaseClResources() {
 	SAFE_RELEASE_KERNEL(this->h_feedForwardKernel);
 	SAFE_RELEASE_KERNEL(this->h_softMaxKernel);
 	SAFE_RELEASE_KERNEL(this->h_zeroBufferKernel);
+	SAFE_RELEASE_KERNEL(this->h_gradientDescentOutputLayerKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);

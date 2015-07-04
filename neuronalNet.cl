@@ -122,3 +122,40 @@ __kernel void zeroBuffer(__global float* buffer, uint len) {
 	}
 
 }
+
+__kernel void gradientDescentOutputLayer(
+	const __global float* labelBuffer,
+	const __global float* neuronalNetworkResultBuffer,
+	__global float* deltaUpdateBuffer,
+	const uint labelBufferOffset,
+	const uint numberOfNeurons,
+	const uint threadsPerInputVector
+	) 
+{
+	//get IDs
+	uint GID = get_global_id(0);
+	uint LID = get_local_id(0);
+
+	//for wich input vector does the thread work?
+	uint inputVectorNumber = GID / threadsPerInputVector;
+	uint neuronNumber = GID - threadsPerInputVector * inputVectorNumber;
+
+	//calculate the deltas for the deltaUpdates buffer
+	if (neuronNumber < numberOfNeurons) {
+		deltaUpdateBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] =
+			labelBuffer[labelBufferOffset + numberOfNeurons * inputVectorNumber + neuronNumber] - 
+			neuronalNetworkResultBuffer[numberOfNeurons * inputVectorNumber + neuronNumber];
+	}
+
+}
+
+__kernel void gradientDescentHiddenLayer(
+	const __global float* weightBuffer,
+	const __global float* neuronInputBuffer,
+	const __global float* neuronOutputBuffer,
+	const uint inputSize,
+	const uint numNeurons 
+	)
+{
+
+}
