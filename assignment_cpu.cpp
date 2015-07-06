@@ -261,6 +261,13 @@ void Assignment::backPropagationCPU(unsigned int indexOfInput) {
 		//std::cout << "delta for output: " << this->h_deltaUpdates.back()[i] << std::endl;	
 	}
 
+	//print the deltas of the output layer
+	/*std::cout << "Deltas of output Layer (CPU): ";
+	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
+		std::cout << this->h_deltaUpdates.back()[i] << " ";
+	}
+	std::cout << std::endl;*/
+
 	//std::cout << " output schreibt in den buffer " << this->h_deltaUpdates.size() -1 << std::endl;
 
 	//compute deltas for the hidden layers

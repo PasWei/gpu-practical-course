@@ -30,16 +30,18 @@ int main(int argc, char** argv)
 
 	//timerGPU.Start();
 	//for (int i = 0; i < 1000; i++) {
-		assign.feedForwardGPU(0, 5);
+		assign.feedForwardGPU(0, 50);
 	//}
 	//timerGPU.Stop();
 	//std::cout << "GPU time: " << timerGPU.GetElapsedMilliseconds() << std::endl;
 	
 	//std::cout << "speedup: " << timerCPU.GetElapsedMilliseconds()/timerGPU.GetElapsedMilliseconds() << std::endl;
 
+	assign.backPropagationCPU(0);
+
 	assign.zeroDeltaBuffers();
 
-	assign.gradientDescentGPU(0, 5);
+	assign.gradientDescentGPU(0, 50);
 
 	assign.ReleaseClResources();
 

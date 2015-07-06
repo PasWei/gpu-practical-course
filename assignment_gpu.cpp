@@ -259,6 +259,35 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 		NULL
 	);
 	V_RETURN_CL(clError, "Error executing gradientDescentOutputLayerKernel!");
+
+	//read back the result and print it
+	//get buffer of right size:
+	/*float* tmpBuff = new float[this->trainingData->numberOfOutputs];
+
+	//read back
+	V_RETURN_CL(
+		clEnqueueReadBuffer(
+			this->h_CLCommandQueue,
+			this->d_deltaUpdates.back(),
+			CL_TRUE,
+			0 * sizeof(cl_float),
+			this->trainingData->numberOfOutputs * sizeof(cl_float),
+			tmpBuff,
+			0,
+			NULL,
+			NULL
+		), 
+		"Error reading data from device!"
+	);
+
+	std::cout << "Deltas of output Layer (GPU): ";
+	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
+		std::cout << tmpBuff[i] << " ";
+	}
+	std::cout << std::endl;
+
+	//delte buffer
+	delete[] tmpBuff;*/
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
@@ -358,14 +387,17 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		V_RETURN_CL(clError, "Error executing feedForwardKernel!");
 
 		//read back the result and print it for debug purposes
-		/*V_RETURN_CL(
+
+		/*float* tmpBuff = new float[numNeurons];		
+
+		V_RETURN_CL(
 			clEnqueueReadBuffer(
 				this->h_CLCommandQueue,
 				this->d_partialResults[i],
 				CL_TRUE,
 				0,
 				numNeurons * sizeof(cl_float),
-				this->h_partialResults[i],
+				tmpBuff,
 				0,
 				NULL,
 				NULL
@@ -376,9 +408,11 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		//debug output:
 		std::cout << "Output of the neuronal network on GPU (layer " << i << "): ";
 		for (int j = 0; j < numNeurons; j++) {
-			std::cout << this->h_partialResults[i][j] << " "; 
+			std::cout << tmpBuff[i] << " "; 
 		}
-		std::cout << std::endl;*/
+		std::cout << std::endl;
+
+		delete[] tmpBuff;*/
 
 	}
 
@@ -408,14 +442,16 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 	V_RETURN_CL(clError, "Error executing feedForwardKernel!");
 
 	//read back the result and print it
+	float* tmpBuf = new float[this->trainingData->numberOfOutputs];
+
 	V_RETURN_CL(
 		clEnqueueReadBuffer(
 			this->h_CLCommandQueue,
 			this->d_partialResults.back(),
 			CL_TRUE,
-			0/*40 * sizeof(cl_float)*/,
+			0 * sizeof(cl_float),
 			this->trainingData->numberOfOutputs * sizeof(cl_float),
-			this->h_partialResults.back(),
+			tmpBuf,
 			0,
 			NULL,
 			NULL
@@ -436,9 +472,11 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 	//output the values
 	std::cout << "Output of the neuronal network (GPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		std::cout << this->h_partialResults.back()[i] << " "; 
+		std::cout << tmpBuf[i] << " "; 
 	}
 	std::cout << std::endl;
+
+	delete[] tmpBuf;
 }
 
 void Assignment::ReleaseClResources() {

@@ -104,7 +104,7 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
-		const unsigned int parallelBackpropagationSize = 5;
+		const unsigned int parallelBackpropagationSize = 50;
 
 		const int localGroupSize = 128;
 
@@ -155,14 +155,6 @@ class Assignment {
 		////////////////////////////////////////////////////////////////////////
 		void randomizeWeights();
 
-		
-		///////////////////////////////////////////////////////////////////////////////
-		//computes gradient of the neuronal network given an index in the input array
-		//it is assumed that the feed forward output corresponding to indexOfInput
-		//is present in h_partialResults
-		///////////////////////////////////////////////////////////////////////////////
-		void backPropagationCPU(unsigned int indexOfInput);
-
 	public:
 
 		bool InitCLContext();
@@ -181,6 +173,13 @@ class Assignment {
 
 		Assignment(int argc, char** argv);
 		~Assignment();
+
+		///////////////////////////////////////////////////////////////////////////////
+		//computes gradient of the neuronal network given an index in the input array
+		//it is assumed that the feed forward output corresponding to indexOfInput
+		//is present in h_partialResults
+		///////////////////////////////////////////////////////////////////////////////
+		void backPropagationCPU(unsigned int indexOfInput);
 		
 		///////////////////////////////////////////////////////////////////////////////
 		//computes the output of the neuronal network given an index in the input array
