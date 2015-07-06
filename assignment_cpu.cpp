@@ -25,11 +25,13 @@ Assignment::Assignment(int argc, char** argv) {
 	this->trainingData->printInformation();
 
 	//allocate and fill the buffer for the training data
-	this->trainingInputBuffer = new float[this->trainingData->numberOfInputs * this->trainingData->numberOfSamples];
+	this->trainingInputBuffer =
+		new float[this->trainingData->numberOfInputs * this->trainingData->numberOfSamples];
 	this->trainingData->getInputBuffer(this->trainingInputBuffer);
 
 	//allocate and fill the buffer for the training labels
-	this->trainingLabelBuffer = new float[this->trainingData->numberOfOutputs * this->trainingData->numberOfSamples];
+	this->trainingLabelBuffer =
+		new float[this->trainingData->numberOfOutputs * this->trainingData->numberOfSamples];
 	this->trainingData->getLabelBuffer(this->trainingLabelBuffer);
 	
 	this->initWeightBuffer();

@@ -34,7 +34,7 @@ bool Assignment::InitCLResources() {
 	);
 	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_trainingLabelBuffer");
 
-	//weight buffers
+	//weight buffers and delta update buffers
 	for (unsigned int i = 0; i < this->sizeOfWeightBuffer.size(); i++) {
 		this->d_weightBuffers.push_back(
 			clCreateBuffer(
@@ -45,7 +45,17 @@ bool Assignment::InitCLResources() {
 				&clError
 			)
 		);
-		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_weightBuffers[]"); 	
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_weightBuffers[]"); 
+		this->d_deltaUpdates.push_back(
+			clCreateBuffer(
+				this->h_CLContext,
+				CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+				sizeof(float) * this->sizeOfWeightBuffer[i],
+				this->h_weightBuffers[i],
+				&clError
+			)
+		);
+		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_deltaUpdates[]"); 	
 	}
 
 	//partial result buffers and delta update buffers
@@ -61,20 +71,8 @@ bool Assignment::InitCLResources() {
 			)
 		);
 		V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_partialResults[]");
-		//update buffer
-		this->d_deltaUpdates.push_back(
-			clCreateBuffer(
-				this->h_CLContext,
-				CL_MEM_READ_WRITE,
-				sizeof(float) * this->hiddenLayers[i] * this->parallelBackpropagationSize,
-				NULL,
-				&clError
-			)
-		);
-		V_RETURN_FALSE_CL(clError, "Error allocating device buffer h_deltaUpdates[]");	
 	}
-	//output layer
-	//weight buffer
+	//output layer weight buffer
 	this->d_partialResults.push_back(
 		clCreateBuffer(
 			this->h_CLContext,
@@ -85,17 +83,6 @@ bool Assignment::InitCLResources() {
 		)
 	);
 	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_partialResults[]");
-	//update buffer
-	this->d_deltaUpdates.push_back(
-		clCreateBuffer(
-			this->h_CLContext,
-			CL_MEM_READ_WRITE,
-			sizeof(float) * this->trainingData->numberOfOutputs * this->parallelBackpropagationSize,
-			NULL,
-			&clError
-		)
-	);
-	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_deltaUpdates[]");
 
 	//load and compile kernels
 	std::string programCode;
