@@ -74,14 +74,18 @@ void Assignment::initWeightBuffer() {
 	
 	//dont forget the constant 1 weights!
 	//the first hidden layer needs the number of input neurons
-	this->sizeOfWeightBuffer.push_back(this->trainingData->numberOfInputs * this->hiddenLayers[0] + this->hiddenLayers[0]);
+	this->sizeOfWeightBuffer.push_back(
+		this->trainingData->numberOfInputs * this->hiddenLayers[0] + this->hiddenLayers[0]
+		);
 	this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
 	
 	std::cout << "layer 0 has " << this->sizeOfWeightBuffer.back() << " weights" << std::endl;
 
 	//hideden layers
 	for (unsigned int i = 1; i < this->hiddenLayers.size(); i++) {
-		this->sizeOfWeightBuffer.push_back(this->hiddenLayers[i-1] * this->hiddenLayers[i] + this->hiddenLayers[i]);
+		this->sizeOfWeightBuffer.push_back(
+			this->hiddenLayers[i-1] * this->hiddenLayers[i] + this->hiddenLayers[i]
+			);
 		this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
 
 		std::cout << "layer " << i << " has " << this->sizeOfWeightBuffer.back() << " weights" << std::endl;
@@ -99,11 +103,14 @@ void Assignment::initWeightBuffer() {
 	//init the temp buffer for feedForward partial results and backPropagation delta updates 
 	for (unsigned int i = 0; i < this->hiddenLayers.size(); i++) {
 		this->h_partialResults.push_back(new float[this->hiddenLayers[i]]);
-		this->h_deltaUpdates.push_back(new float[this->hiddenLayers[i]]);
 	}
 	//dont forget the output layer also has output and deltas
 	this->h_partialResults.push_back(new float[this->trainingData->numberOfOutputs]);
-	this->h_deltaUpdates.push_back(new float[this->trainingData->numberOfOutputs]);
+
+	//init the deltaUpdates buffer
+	for (unsigned int i = 0; i < this->sizeOfWeightBuffer.size(); i++) {
+		this->h_deltaUpdates.push_back(new float[this->sizeOfWeightBuffer[i]]);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -234,11 +241,11 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	}
 
 	//output the values
-	std::cout << "Output of the neuronal network (CPU): ";
+	/*std::cout << "Output of the neuronal network (CPU): ";
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 	
 	return crossEntropy;
 }
@@ -249,7 +256,7 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 //it is assumed that the feed forward output corresponding to indexOfInput
 //is present in h_partialResults
 ///////////////////////////////////////////////////////////////////////////////
-void Assignment::backPropagationCPU(unsigned int indexOfInput) {
+void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 
 	//compute index in label buffer
 	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
@@ -257,85 +264,83 @@ void Assignment::backPropagationCPU(unsigned int indexOfInput) {
 	
 	//compute deltas for the output layer
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		this->h_deltaUpdates.back()[i] = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];
-		//std::cout << "delta for output: " << this->h_deltaUpdates.back()[i] << std::endl;	
+		//compute the delta
+		float delta = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];
+		float input;
+		//iterate over all inputs
+		for (int j = 0; j < hiddenLayers.back() + 1; j++) {
+			//get the right input
+			if (j == hiddenLayers.back()) {
+				input = 1.0f;
+			} else {
+				input = this->h_partialResults[hiddenLayers.size()-1][j]; 
+			}
+			//write back. Keep in mind that the delta buffer is organized like the weight buffer
+			this->h_deltaUpdates.back()[j * this->trainingData->numberOfOutputs + i] = delta * input;
+		}
 	}
-
-	//print the deltas of the output layer
-	/*std::cout << "Deltas of output Layer (CPU): ";
-	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		std::cout << this->h_deltaUpdates.back()[i] << " ";
-	}
-	std::cout << std::endl;*/
-
-	//std::cout << " output schreibt in den buffer " << this->h_deltaUpdates.size() -1 << std::endl;
 
 	//compute deltas for the hidden layers
 	int numNeuronsNextLayer = this->trainingData->numberOfOutputs;
-	//iterate over all hidden layers
+	int numberOfInputs;
 	for (int i = this->hiddenLayers.size()-1; i >= 0; i--) {
-		//iterate over all neurons in that layer
-		//std::cout << "i: " << i << " numNeuronsNextLayer: " << numNeuronsNextLayer <<
-		//	" geschrieben wird in buffer " << i << std::endl;
+		//get the number of inputs for this layer
+		if (i == 0) {
+			numberOfInputs = this->trainingData->numberOfInputs;
+		} else {
+			numberOfInputs = this->hiddenLayers[i-1];
+		}
+		//iterate over all neurons
 		for (int j = 0; j < this->hiddenLayers[i]; j++) {
 			//the delta
 			float delta = 0.0f;
-
+			//get the first part of the derivative 
 			for (int k = 0; k < numNeuronsNextLayer; k++) {
 				delta += this->h_deltaUpdates[i+1][k] * h_weightBuffers[i+1][k * this->hiddenLayers[i] + j];
 			}		
 
 			//the second part of the derivative
 			delta *= this->h_partialResults[i][j] * (1.0f - this->h_partialResults[i][j]);
-			//write to buffer
-			this->h_deltaUpdates[i][j] = delta;
-		}
 		
+			//get the right input and write into the deltaUpdates buffer
+			//iterate over the inputs (dont forget the constant input)
+			float input;
+			for (int k = 0; k < numberOfInputs + 1; k++) {
+				//get the right input (3 possible )
+				if(k == numberOfInputs) {
+					input = 1.0f;
+				} else {
+					if (i == 0) {
+						input = this->trainingInputBuffer[inputIndex + i];
+					} else {
+						input = this->h_partialResults[i-1][k];
+					}
+				}
+				this->h_deltaUpdates[i][k * this->hiddenLayers[i] + j] = delta * input;
+			}		
+		}
 		//set number of neurons for the next layer
 		numNeuronsNextLayer = this->hiddenLayers[i];
 	}
+}
 
-	//update the weights
-	int numNeuronsPreviousLayer = this->trainingData->numberOfInputs;
-	int numNeuronsThisLayer = this->hiddenLayers[0];
-
+void Assignment::updateWeightsCPU() {
+	
 	//iterate over all layers
-	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {		
-		//enumerate all inputs
-		for (int j = 0; j < numNeuronsPreviousLayer + 1; j++) {
-			//get the input x_{ij}
-			float input;
-			if (j == numNeuronsPreviousLayer) {
-				input = 1.0f;
-			} else {
-				if (i == 0) {
-					input = this->trainingInputBuffer[inputIndex + j];
-				} else {
-					input = this->h_partialResults[i-1][j];
-				}
-			}
-			//enumerate all deltas
-			for (int k = 0; k < numNeuronsThisLayer; k++) {
-				float delta = this->h_deltaUpdates[i][k];
-				/*if (delta != delta) {
-					std::cout << "delta is not a number!" << std::endl;
-				}
-				if (input != input) {
-					std::cout << "input is not a number!" << std::endl;
-				}*/
-				h_weightBuffers[i][j * numNeuronsThisLayer + k] += delta * input * this->learningRate; 
-				//std::cout << "delta: " << delta << " input: " << input << " i: " << i << std::endl;
-			}
+	for (unsigned int i = 0; i < this->h_deltaUpdates.size(); i++) {
+		//iterate over all weights
+		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
+			this->h_weightBuffers[i][j] += this->h_deltaUpdates[i][j];
 		}
-		
-		//update numbers
-		if (i == this->h_weightBuffers.size() - 2) {
-			numNeuronsThisLayer = this->trainingData->numberOfOutputs;
-		} else {
-			numNeuronsThisLayer = this->hiddenLayers[i+1];
-		}
+	}
+}
 
-		numNeuronsPreviousLayer = this->hiddenLayers[i];
+void Assignment::zeroDeltaBuffersCPU() {
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+		//iterate over all deltas
+		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
+			this->h_deltaUpdates[i][j] = 0.0f;
+		}
 	}
 }
 
@@ -424,12 +429,14 @@ void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int n
 				//random = rd() % this->trainingData->numberOfSamples;
 				random = rd() % 10;
 				//random = 0;
+				zeroDeltaBuffersCPU();
 				entropy += feedForwardCPU(random);
-				backPropagationCPU(random);
+				gradientDescentCPU(random);
+				updateWeightsCPU();
 			}
 			std::cout << "Entropy: " << entropy << " Epoch " << j << std::endl;
 			
-			/*int number = random;
+			int number = random;
 			for (int i = 0; i < 28; i++) {
 				for (int j = 0; j < 28; j++) {
 					int addr = i*28 + j + 28*28*number;
@@ -461,7 +468,7 @@ void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int n
 				}			
 			}
 			std::cout << std::endl;
-			std::cout << "guess: " << guess << std::endl;*/
+			std::cout << "guess: " << guess << std::endl;
 		}
 }
 

@@ -161,7 +161,9 @@ class Assignment {
 
 		bool InitCLResources();
 
-		void zeroDeltaBuffers();
+		void zeroDeltaBuffersCPU();
+
+		void zeroDeltaBuffersGPU();
 
 		void gradientDescentGPU(unsigned int indexOfInput, unsigned int numInputVectors);
 
@@ -179,18 +181,15 @@ class Assignment {
 		//it is assumed that the feed forward output corresponding to indexOfInput
 		//is present in h_partialResults
 		///////////////////////////////////////////////////////////////////////////////
-		void backPropagationCPU(unsigned int indexOfInput);
+		void gradientDescentCPU(unsigned int indexOfInput);
+
+		void updateWeightsCPU();
+
+		void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);
 		
 		///////////////////////////////////////////////////////////////////////////////
 		//computes the output of the neuronal network given an index in the input array
 		//the output is saved in the temporary buffer buf2
 		///////////////////////////////////////////////////////////////////////////////
 		float feedForwardCPU(unsigned int indexOfInput);
-
-		///////////////////////////////////////////////////////////////
-		//trains the neuronal network using stochastic gradient descent
-		//epoch: number of samples per epoch
-		//numEpochs: number of epochs to train
-		///////////////////////////////////////////////////////////////
-		void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);
 };

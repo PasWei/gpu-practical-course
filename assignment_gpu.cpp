@@ -123,7 +123,7 @@ bool Assignment::InitCLResources() {
 	return true;
 }
 
-void Assignment::zeroDeltaBuffers() {
+void Assignment::zeroDeltaBuffersGPU() {
 	
 	cl_int clError;
 
@@ -145,7 +145,7 @@ void Assignment::zeroDeltaBuffers() {
 		clError = clSetKernelArg(h_zeroBufferKernel, 0, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i]);
 		
 		//Argument 1: buffer length
-		bufferLength = this->parallelBackpropagationSize * numNeurons;
+		bufferLength = this->sizeOfWeightBuffer[i];
 		clError |= clSetKernelArg(h_zeroBufferKernel, 1, sizeof(cl_int), (void*)&bufferLength);
 		V_RETURN_CL(clError, "Failed to set kernel args: zeroBufferKernel");
 
@@ -288,6 +288,10 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 
 	//delte buffer
 	delete[] tmpBuff;*/
+
+	//now the hideen layers
+	
+
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {

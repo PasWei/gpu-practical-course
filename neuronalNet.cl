@@ -142,7 +142,7 @@ __kernel void gradientDescentOutputLayer(
 
 	//calculate the deltas for the deltaUpdates buffer
 	if (neuronNumber < numberOfNeurons) {
-		deltaUpdateBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] =
+		deltaUpdateBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] +=
 			labelBuffer[labelBufferOffset + numberOfNeurons * inputVectorNumber + neuronNumber] - 
 			neuronalNetworkResultBuffer[numberOfNeurons * inputVectorNumber + neuronNumber];
 	}
@@ -153,8 +153,12 @@ __kernel void gradientDescentHiddenLayer(
 	const __global float* weightBuffer,
 	const __global float* neuronInputBuffer,
 	const __global float* neuronOutputBuffer,
+	__global float* deltaUpdateBuffer,
 	const uint inputSize,
-	const uint numNeurons 
+	const uint numberOfNeurons,
+	const uint threadsPerInputVector,
+	const uint inputBufferOffset,
+	__local float* inputCache,
 	)
 {
 
