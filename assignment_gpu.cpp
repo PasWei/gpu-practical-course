@@ -207,19 +207,26 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 	//Argument 0: the label buffer
 	clError = clSetKernelArg(
 		h_gradientDescentOutputLayerKernel, 0, sizeof(cl_mem), (void*)&this->d_trainingLabelBuffer);
-	//Argument 1: the result buffer
+	//Argument 1: the input buffer for the output layer
+	clError = clSetKernelArg(
+			h_gradientDescentOutputLayerKernel,
+			1,
+			sizeof(cl_mem),
+			(void*)&this->d_partialResults[this->d_partialResults.size()-2]
+		);
+	//Argument 2: the result buffer
 	clError |= clSetKernelArg(
-		h_gradientDescentOutputLayerKernel, 1, sizeof(cl_mem), (void*)&this->d_partialResults.back());		
-	//Argument 2: the delta update buffer
+		h_gradientDescentOutputLayerKernel, 2, sizeof(cl_mem), (void*)&this->d_partialResults.back());		
+	//Argument 3: the delta update buffer
 	clError |= clSetKernelArg(
-		h_gradientDescentOutputLayerKernel, 2, sizeof(cl_mem), (void*)&this->d_deltaUpdates.back());
-	//Argument 3: the label buffer offset
+		h_gradientDescentOutputLayerKernel, 3, sizeof(cl_mem), (void*)&this->d_deltaUpdates.back());
+	//Argument 4: the label buffer offset
 	clError |= clSetKernelArg(
-		h_gradientDescentOutputLayerKernel, 3, sizeof(cl_int), (void*)&labelIndex);
-	//Argument 4: the number of neurons
+		h_gradientDescentOutputLayerKernel, 4, sizeof(cl_int), (void*)&labelIndex);
+	//Argument 5: the number of neurons
 	clError |= clSetKernelArg(
-		h_gradientDescentOutputLayerKernel, 4, sizeof(cl_int), (void*)&this->trainingData->numberOfOutputs);
-	//Argument 5: the the number of threads per input vector
+		h_gradientDescentOutputLayerKernel, 5, sizeof(cl_int), (void*)&this->trainingData->numberOfOutputs);
+	//Argument 6: the the number of threads per input vector
 	int threadsPerInputVector = this->trainingData->numberOfOutputs/this->localGroupSize;
 		if (this->trainingData->numberOfOutputs % this->localGroupSize != 0) {
 			threadsPerInputVector++;
@@ -227,7 +234,14 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 	//inputSize/this->localGroupSize is always a multiple of localGroupSize
 	threadsPerInputVector = threadsPerInputVector*this->localGroupSize;
 	clError |= clSetKernelArg(
-		h_gradientDescentOutputLayerKernel, 5, sizeof(cl_int), (void*)&threadsPerInputVector);
+		h_gradientDescentOutputLayerKernel, 6, sizeof(cl_int), (void*)&threadsPerInputVector);
+	//Argument 7: the size of the input vector
+	int inputSize = hiddenLayers.back();
+	clError |= clSetKernelArg(
+		h_gradientDescentOutputLayerKernel, 7, sizeof(cl_int), (void*)&inputSize);
+	//Argument 8: the input cache
+		clError |= clSetKernelArg(h_gradientDescentOutputLayerKernel, 8, inputSize * sizeof(cl_float), NULL);
+	V_RETURN_CL(clError, "Failed to set kernel args: gradientDescentOutputLayerKernel");
 
 	//calculate local and global work size
 	size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
@@ -249,7 +263,7 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 
 	//read back the result and print it
 	//get buffer of right size:
-	/*float* tmpBuff = new float[this->trainingData->numberOfOutputs];
+	float* tmpBuff = new float[this->sizeOfWeightBuffer.back()];
 
 	//read back
 	V_RETURN_CL(
@@ -257,8 +271,8 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 			this->h_CLCommandQueue,
 			this->d_deltaUpdates.back(),
 			CL_TRUE,
-			0 * sizeof(cl_float),
-			this->trainingData->numberOfOutputs * sizeof(cl_float),
+			0,
+			this->sizeOfWeightBuffer.back() * sizeof(cl_float),
 			tmpBuff,
 			0,
 			NULL,
@@ -268,17 +282,15 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 	);
 
 	std::cout << "Deltas of output Layer (GPU): ";
-	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
+	for (int i = 0; i < this->sizeOfWeightBuffer.back(); i++) {
 		std::cout << tmpBuff[i] << " ";
 	}
 	std::cout << std::endl;
 
 	//delte buffer
-	delete[] tmpBuff;*/
+	delete[] tmpBuff;
 
 	//now the hideen layers
-	
-
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {

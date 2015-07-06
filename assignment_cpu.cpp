@@ -282,6 +282,12 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 		}
 	}
 
+	std::cout << "Deltas of output Layer (CPU): ";
+	for (int i = 0; i < this->sizeOfWeightBuffer.back(); i++) {
+		std::cout << this->h_deltaUpdates.back()[i] << " ";
+	}
+	std::cout << std::endl;
+
 	//compute deltas for the hidden layers
 	int numNeuronsNextLayer = this->trainingData->numberOfOutputs;
 	int numberOfInputs;

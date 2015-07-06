@@ -125,11 +125,14 @@ __kernel void zeroBuffer(__global float* buffer, uint len) {
 
 __kernel void gradientDescentOutputLayer(
 	const __global float* labelBuffer,
+	const __global float* inputBuffer,
 	const __global float* neuronalNetworkResultBuffer,
 	__global float* deltaUpdateBuffer,
 	const uint labelBufferOffset,
 	const uint numberOfNeurons,
-	const uint threadsPerInputVector
+	const uint threadsPerInputVector,
+	const uint numberOfInputs,
+	__local float* inputCache
 	) 
 {
 	//get IDs
@@ -140,13 +143,43 @@ __kernel void gradientDescentOutputLayer(
 	uint inputVectorNumber = GID / threadsPerInputVector;
 	uint neuronNumber = GID - threadsPerInputVector * inputVectorNumber;
 
-	//calculate the deltas for the deltaUpdates buffer
-	if (neuronNumber < numberOfNeurons) {
-		deltaUpdateBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] +=
-			labelBuffer[labelBufferOffset + numberOfNeurons * inputVectorNumber + neuronNumber] - 
-			neuronalNetworkResultBuffer[numberOfNeurons * inputVectorNumber + neuronNumber];
+	//get the information for addressing the input vector and cache
+	uint localWorkgroupSize = get_local_size(0);
+	uint stillToRead = numberOfInputs;
+	uint cacheOffset = 0;
+
+	//read the input vector into the cache
+	while (localWorkgroupSize <= stillToRead) {
+		inputCache[cacheOffset + LID] = inputBuffer[LID + cacheOffset +
+			inputVectorNumber * numberOfInputs];
+		cacheOffset = cacheOffset + localWorkgroupSize;
+		stillToRead = stillToRead - localWorkgroupSize;
 	}
 
+	if (LID < stillToRead) {
+		inputCache[cacheOffset + LID] = inputBuffer[LID + cacheOffset +
+			inputVectorNumber * numberOfInputs];
+	} 
+
+	//calculate the deltas for the deltaUpdates buffer
+	if (neuronNumber < numberOfNeurons) {
+		//calculate the delta value
+		float delta = labelBuffer[labelBufferOffset + numberOfNeurons * inputVectorNumber + neuronNumber] - 
+			neuronalNetworkResultBuffer[numberOfNeurons * inputVectorNumber + neuronNumber];
+		
+		//add deltas to the buffers
+		float input;
+		for (int i = 0; i < numberOfInputs + 1; i++) {
+			//get the right input
+			if (i == numberOfInputs) {
+				input = 1.0f;
+			} else {
+				input = inputCache[neuronNumber];
+			}
+			//write changes to the delta buffer
+			deltaUpdateBuffer[i * numberOfInputs + neuronNumber] += delta * input;
+		}
+	}
 }
 
 __kernel void gradientDescentHiddenLayer(
@@ -158,7 +191,7 @@ __kernel void gradientDescentHiddenLayer(
 	const uint numberOfNeurons,
 	const uint threadsPerInputVector,
 	const uint inputBufferOffset,
-	__local float* inputCache,
+	__local float* inputCache
 	)
 {
 

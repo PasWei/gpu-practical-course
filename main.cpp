@@ -12,10 +12,33 @@ int main(int argc, char** argv)
 	std::cout << std::endl;
 
 	Assignment assign (argc, argv);
-
-	assign.stochasticGradientDescentCPU(10000, 100);
 	
-	/*
+	assign.InitCLContext();
+
+	assign.InitCLResources();
+
+///////////////////////////////////////////////////////////
+
+	assign.zeroDeltaBuffersCPU();
+	assign.zeroDeltaBuffersGPU();
+
+	assign.feedForwardCPU(0);
+	assign.feedForwardGPU(0, 5);
+
+	assign.gradientDescentCPU(0);
+	assign.gradientDescentGPU(0, 5);
+
+///////////////////////////////////////////////////////////
+
+	assign.ReleaseClResources();
+
+	assign.ReleaseCLContext();
+
+	std::cout << std::endl;
+
+	//assign.stochasticGradientDescentCPU(10000, 100);
+	
+	/*	
 	assign.InitCLContext();
 
 	assign.InitCLResources();
