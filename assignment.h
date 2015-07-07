@@ -126,6 +126,7 @@ class Assignment {
 		cl_kernel h_zeroBufferKernel;
 		cl_kernel h_gradientDescentOutputLayerKernel;
 		cl_kernel h_gradientDescentHiddenLayerKernel;
+		cl_kernel h_updateWeightsGPUKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
@@ -191,6 +192,7 @@ class Assignment {
 		void gradientDescentCPU(unsigned int indexOfInput);
 
 		void updateWeightsCPU();
+		void updateWeightsGPU();
 
 		void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);
 		
@@ -208,4 +210,6 @@ class Assignment {
 		void printDeltaUpdatesCPU();
 		
 		void printDeltaBufferCPU();
+
+		void trainGPUTest();
 };

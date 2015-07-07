@@ -274,3 +274,17 @@ __kernel void gradientDescentHiddenLayer(
 		}
 	}
 }
+
+__kernel void updateWeights(
+	const __global float* deltaUpdateBuffer,
+	__global float* weightBuffer,
+	const float learningRate,
+	const uint numWeights
+	)
+{
+	uint GID = get_global_id(0);
+	
+	if (GID < numWeights) {
+		weightBuffer[GID] += deltaUpdateBuffer[GID] * learningRate;
+	}
+}

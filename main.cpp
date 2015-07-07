@@ -19,12 +19,14 @@ int main(int argc, char** argv)
 
 ///////////////////////////////////////////////////////////
 
-	assign.zeroDeltaBuffersCPU();
+	assign.trainGPUTest();
+
+	/*assign.zeroDeltaBuffersCPU();
 	assign.zeroDeltaBuffersGPU();
 
 	//assign.stochasticGradientDescentCPU(1000, 100);
 
-	int numInputs = 1;
+	int numInputs = 60;
 
 	for (int i = 0; i < numInputs; i++) {
 		assign.feedForwardCPU(i);
@@ -40,7 +42,7 @@ int main(int argc, char** argv)
 	assign.printDeltaBufferOutputLayerCPU();
 	assign.printDeltaBufferOutputLayerGPU();
 	std::cout << std::endl;
-	assign.compareDeltaBuffers();
+	assign.compareDeltaBuffers();*/
 
 ///////////////////////////////////////////////////////////
 

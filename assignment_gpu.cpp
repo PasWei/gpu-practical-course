@@ -132,6 +132,9 @@ bool Assignment::InitCLResources() {
 	h_gradientDescentHiddenLayerKernel = clCreateKernel(this->h_Program, "gradientDescentHiddenLayer", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: gradientDescentHiddenLayer.");
 
+	h_updateWeightsGPUKernel = clCreateKernel(this->h_Program, "updateWeights", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: updateWeights.");
+
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
 	return true;
@@ -394,9 +397,9 @@ void Assignment::compareDeltaBuffers() {
 		int numdiffs = 0;
 		std::cout << "differences of delta buffers in layer " << i << ": ";
 		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
-			std::cout << tmpBuff[j] - this->h_deltaUpdates[i][j] << /*" (" << tmpBuff[j] << "-" <<
-			this->h_deltaUpdates[i][j] << ")" <<*/ " ";
-			if (std::abs(tmpBuff[j] - this->h_deltaUpdates[i][j]) > 0.0000001) {
+			//std::cout << tmpBuff[j] - this->h_deltaUpdates[i][j] << /*" (" << tmpBuff[j] << "-" <<
+			//this->h_deltaUpdates[i][j] << ")" <<*/ " ";
+			if (std::abs(tmpBuff[j] - this->h_deltaUpdates[i][j]) > 0.000001) {
 				numdiffs++;
 			}
 		}
@@ -560,7 +563,6 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		std::cout << std::endl;
 
 		delete[] tmpBuff;*/
-
 	}
 
 	//set up the softMax kernel
@@ -589,7 +591,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 	V_RETURN_CL(clError, "Error executing feedForwardKernel!");
 
 	//read back the result and print it
-	float* tmpBuf = new float[this->trainingData->numberOfOutputs];
+	/*float* tmpBuf = new float[this->trainingData->numberOfOutputs];
 
 	V_RETURN_CL(
 		clEnqueueReadBuffer(
@@ -606,7 +608,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		"Error reading data from device!"
 	);
 
-	/*float crossEntropy = 0.0f;
+	float crossEntropy = 0.0f;
 
 	//compute the output
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
@@ -614,7 +616,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		float target = this->trainingLabelBuffer[labelIndex + i];
 		float output = this->h_partialResults.back()[i];
 		crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
-	}*/
+	}
 
 	//output the values
 	std::cout << "Output of the neuronal network (GPU): ";
@@ -623,7 +625,89 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 	}
 	std::cout << std::endl;
 
-	delete[] tmpBuf;
+	delete[] tmpBuf;*/
+}
+
+void Assignment::trainGPUTest() {
+	//1000 samples, 
+	//10 parallel backprobs
+	int startInput = 0;
+	int numInputs = 10;
+	for ( int i = 0; i < 1000; i++) { //epochs
+		float crossEntropy = 0.0f;
+		for (int j = 0; j < 100; j++) { //size of epoch
+			zeroDeltaBuffersGPU();
+			feedForwardGPU(j, 1);
+			gradientDescentGPU(j, 1);
+			updateWeightsGPU();
+
+			float* tmpBuff = new float[10];		
+
+			V_RETURN_CL(
+				clEnqueueReadBuffer(
+					this->h_CLCommandQueue,
+					this->d_partialResults.back(),
+					CL_TRUE,
+					0,
+					10 * sizeof(cl_float),
+					tmpBuff,
+					0,
+					NULL,
+					NULL
+				), 
+				"Error reading data from device!"
+			);
+
+			//compute the entropy
+			for (unsigned int k = 0; k < this->trainingData->numberOfOutputs; k++) {
+				float target = this->trainingLabelBuffer[j*this->trainingData->numberOfOutputs+k];
+				float output = tmpBuff[k];
+				crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
+			}
+
+			delete[] tmpBuff;
+		} 
+		std::cout << "crossEntropy: " << crossEntropy << std::endl;
+	}
+}
+
+void Assignment::updateWeightsGPU() {
+	
+	cl_int clError;
+
+	for (unsigned int i = 0; i < d_deltaUpdates.size(); i++) {
+		//Argument 0: the delta updates buffer
+		clError = 
+			clSetKernelArg(h_updateWeightsGPUKernel, 0, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i]);
+		//Argument 1: the weight buffer
+		clError |= 
+			clSetKernelArg(h_updateWeightsGPUKernel, 1, sizeof(cl_mem), (void*)&this->d_weightBuffers[i]);
+		//Argument 2: the learning rate
+		clError |= 
+			clSetKernelArg(h_updateWeightsGPUKernel, 2, sizeof(float), (void*)&this->learningRate);
+		//Argument 3: the number of weights
+		clError |= 
+			clSetKernelArg(h_updateWeightsGPUKernel, 3, sizeof(cl_int), (void*)&this->sizeOfWeightBuffer[i]);
+		V_RETURN_CL(clError, "Failed to set kernel args: updateWeightsGPUKernel");
+
+		//calculate local and global work size
+		size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
+		int numGroups = this->sizeOfWeightBuffer[i] / this->localGroupSize + 1;
+		size_t GlobalWorkSize = numGroups * this->localGroupSize;
+		//launch the kernel
+		clError = clEnqueueNDRangeKernel(
+			this->h_CLCommandQueue, 
+			this->h_updateWeightsGPUKernel, 
+			1, 
+			NULL, 
+			&GlobalWorkSize, 
+			LocalWorkSize, 
+			0, 
+			NULL, 
+			NULL
+		);
+		V_RETURN_CL(clError, "Error executing updateWeightsGPUKernel!");
+	}
 }
 
 void Assignment::ReleaseClResources() {
@@ -644,6 +728,7 @@ void Assignment::ReleaseClResources() {
 	SAFE_RELEASE_KERNEL(this->h_zeroBufferKernel);
 	SAFE_RELEASE_KERNEL(this->h_gradientDescentOutputLayerKernel);
 	SAFE_RELEASE_KERNEL(this->h_gradientDescentHiddenLayerKernel);
+	SAFE_RELEASE_KERNEL(this->h_updateWeightsGPUKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);
