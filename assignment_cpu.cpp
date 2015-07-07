@@ -304,9 +304,8 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 			float delta = 0.0f;
 			//get the first part of the derivative 
 			for (int k = 0; k < numNeuronsNextLayer; k++) {
-				delta += this->h_deltaBuffer[i+1][k] * this->h_weightBuffers[i+1][k * numNeuronsNextLayer + j];
+				delta += this->h_deltaBuffer[i+1][k] * this->h_weightBuffers[i+1][j * numNeuronsNextLayer + k];
 			}		
-
 			//the second part of the derivative
 			delta *= this->h_partialResults[i][j] * (1.0f - this->h_partialResults[i][j]);
 			//save the delta
@@ -330,6 +329,17 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 		}
 		//set number of neurons for the next layer
 		numNeuronsNextLayer = this->hiddenLayers[i];
+	}
+}
+
+void Assignment::printDeltaUpdatesCPU() {
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+		//iterate over all deltas
+		std::cout << "deltaUpdates for layer " << i << ": ";
+		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
+			std::cout << this->h_deltaUpdates[i][j] << " ";
+		}
+		std::cout << std::endl;
 	}
 }
 
@@ -359,6 +369,22 @@ void  Assignment::printDeltaBufferOutputLayerCPU() {
 		std::cout << this->h_deltaUpdates.back()[i] << " ";
 	}
 	std::cout << std::endl;
+}
+
+void Assignment::printDeltaBufferCPU() {
+	for (unsigned int i = 0; i < this->h_deltaBuffer.size(); i++) {
+		int numNeurons;
+		if (i == this->h_deltaBuffer.size() - 1) {
+			numNeurons = this->trainingData->numberOfOutputs;
+		} else {
+			numNeurons = this->hiddenLayers[i];
+		}
+		std::cout << "deltaBuffer of layer " << i << ": ";
+		for (int j = 0; j < numNeurons; j++) {
+			std::cout << this->h_deltaBuffer[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////

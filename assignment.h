@@ -201,4 +201,8 @@ class Assignment {
 		void printDeltaBufferOutputLayerGPU();
 
 		void compareDeltaBuffers();
+
+		void printDeltaUpdatesCPU();
+		
+		void printDeltaBufferCPU();
 };

@@ -363,8 +363,8 @@ void Assignment::compareDeltaBuffers() {
 		//compare the buffers
 		std::cout << "differences of delta buffers in layer " << i << ": ";
 		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
-			std::cout << tmpBuff[j] - this->h_deltaUpdates[i][j] /*<< " (" << tmpBuff[j] << "-" <<
-			this->h_deltaUpdates[i][j] << ")" */<< " ";
+			std::cout << tmpBuff[j] - this->h_deltaUpdates[i][j] << /*" (" << tmpBuff[j] << "-" <<
+			this->h_deltaUpdates[i][j] << ")" <<*/ " ";
 		}
 		std::cout << std::endl;
 
