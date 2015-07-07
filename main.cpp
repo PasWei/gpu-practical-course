@@ -31,8 +31,8 @@ int main(int argc, char** argv)
 		assign.gradientDescentCPU(i);
 	}
 
-	//assign.feedForwardGPU(0, numInputs);
-	//assign.gradientDescentGPU(0, numInputs);
+	assign.feedForwardGPU(0, numInputs);
+	assign.gradientDescentGPU(0, numInputs);
 	
 	//assign.printDeltaBufferCPU();
 	//assign.printDeltaUpdatesCPU();

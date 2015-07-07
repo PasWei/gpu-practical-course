@@ -137,15 +137,16 @@ inline void AtomicAddFloat(volatile __global float *source, const float operand)
 }
 
 __kernel void gradientDescentOutputLayer(
-	const __global float* labelBuffer,
-	const __global float* inputBuffer,
-	const __global float* neuronalNetworkResultBuffer,
-	__global float* deltaUpdateBuffer,
-	const uint labelBufferOffset,
-	const uint numberOfNeurons,
-	const uint threadsPerInputVector,
-	const uint numberOfInputs,
-	__local float* inputCache
+/*0*/const __global float* labelBuffer,
+/*1*/const __global float* inputBuffer,
+/*2*/const __global float* neuronalNetworkResultBuffer,
+/*3*/__global float* deltaBuffer,
+/*4*/__global float* deltaUpdateBuffer,
+/*5*/const uint labelBufferOffset,
+/*6*/const uint numberOfNeurons,
+/*7*/const uint threadsPerInputVector,
+/*8*/const uint numberOfInputs,
+/*9*/__local float* inputCache
 	) 
 {
 	//get IDs
@@ -182,7 +183,8 @@ __kernel void gradientDescentOutputLayer(
 		//calculate the delta value
 		float delta = labelBuffer[labelBufferOffset + numberOfNeurons * inputVectorNumber + neuronNumber] - 
 			neuronalNetworkResultBuffer[numberOfNeurons * inputVectorNumber + neuronNumber];
-		
+		//save the deltas for the layer below
+		deltaBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] = delta;
 		//add deltas to the buffers
 		float input;
 		for (int i = 0; i < numberOfInputs + 1; i++) {
@@ -203,14 +205,15 @@ __kernel void gradientDescentHiddenLayer(
 /*0*/const __global float* weightBufferHigherLayer,
 /*1*/const __global float* neuronInputBuffer,
 /*2*/const __global float* neuronOutputBuffer,
-/*3*/const __global float* deltaUpdateBufferHigherLayer,
-/*4*/__global float* deltaUpdateBuffer,
-/*5*/const uint numberOfInputs,
-/*6*/const uint numberOfNeurons,
-/*7*/const uint numberOfNeuronsHigherLayer,
-/*8*/const uint threadsPerInputVector,
-/*9*/const uint inputBufferOffset,
-/*10*/__local float* inputCache
+/*3*/const __global float* deltaBufferHigherLayer,
+/*4*/__global float* deltaBuffer,
+/*5*/__global float* deltaUpdateBuffer,
+/*6*/const uint numberOfInputs,
+/*7*/const uint numberOfNeurons,
+/*8*/const uint numberOfNeuronsHigherLayer,
+/*9*/const uint threadsPerInputVector,
+/*10*/const uint inputBufferOffset,
+/*11*/__local float* inputCache
 	)
 {
 	//get IDs
@@ -248,13 +251,14 @@ __kernel void gradientDescentHiddenLayer(
 		float delta = 0.0f;
 		//calculate the first part of the delta:
 		for (int i = 0; i < numberOfNeuronsHigherLayer; i++) {
-			delta += deltaUpdateBufferHigherLayer[i * numberOfNeuronsHigherLayer + neuronNumber] *
-				weightBufferHigherLayer[i * numberOfNeuronsHigherLayer + neuronNumber];	
+			delta += deltaBufferHigherLayer[inputVectorNumber * numberOfNeuronsHigherLayer + i] *
+				weightBufferHigherLayer[neuronNumber * numberOfNeuronsHigherLayer + i];	
 		}
 		//the second part
 		float tmp = neuronOutputBuffer[inputVectorNumber * numberOfNeurons + neuronNumber];
 		delta *= tmp * (1.0f - tmp);
-		
+		//save the deltas for the layer below
+		deltaBuffer[numberOfNeurons * inputVectorNumber + neuronNumber] = delta;
 		//add deltas to the buffers
 		float input;
 		for (int i = 0; i < numberOfInputs + 1; i++) {
