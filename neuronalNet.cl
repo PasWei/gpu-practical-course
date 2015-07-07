@@ -161,6 +161,9 @@ __kernel void gradientDescentOutputLayer(
 			inputVectorNumber * numberOfInputs];
 	} 
 
+	//wait for the threads to fill the cache
+	barrier(CLK_LOCAL_MEM_FENCE);
+
 	//calculate the deltas for the deltaUpdates buffer
 	if (neuronNumber < numberOfNeurons) {
 		//calculate the delta value
@@ -174,10 +177,10 @@ __kernel void gradientDescentOutputLayer(
 			if (i == numberOfInputs) {
 				input = 1.0f;
 			} else {
-				input = inputCache[neuronNumber];
+				input = inputCache[i];
 			}
 			//write changes to the delta buffer
-			deltaUpdateBuffer[i * numberOfInputs + neuronNumber] += delta * input;
+			deltaUpdateBuffer[i * numberOfNeurons + neuronNumber] += delta * input;
 		}
 	}
 }

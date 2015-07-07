@@ -99,6 +99,8 @@ void Assignment::initWeightBuffer() {
 	);
 	this->h_weightBuffers.push_back(new float[this->sizeOfWeightBuffer.back()]);
 
+	//std::cout << "this->sizeOfWeightBuffer: " << this->sizeOfWeightBuffer.back() << std::endl;
+
 	std::cout << "outputlayer (layer " << this->h_weightBuffers.size()-1 << ") has " <<
 		this->sizeOfWeightBuffer.back() << " weights" << std::endl;
 

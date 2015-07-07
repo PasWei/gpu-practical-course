@@ -23,10 +23,10 @@ int main(int argc, char** argv)
 	assign.zeroDeltaBuffersGPU();
 
 	assign.feedForwardCPU(0);
-	assign.feedForwardGPU(0, 5);
+	assign.feedForwardGPU(0, 1);
 
 	assign.gradientDescentCPU(0);
-	assign.gradientDescentGPU(0, 5);
+	assign.gradientDescentGPU(0, 1);
 
 ///////////////////////////////////////////////////////////
 

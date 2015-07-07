@@ -233,6 +233,9 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 		}
 	//inputSize/this->localGroupSize is always a multiple of localGroupSize
 	threadsPerInputVector = threadsPerInputVector*this->localGroupSize;
+	
+	//std::cout << "threadsPerInputVector: " << threadsPerInputVector << std::endl;
+
 	clError |= clSetKernelArg(
 		h_gradientDescentOutputLayerKernel, 6, sizeof(cl_int), (void*)&threadsPerInputVector);
 	//Argument 7: the size of the input vector
