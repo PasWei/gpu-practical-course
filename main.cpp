@@ -22,11 +22,16 @@ int main(int argc, char** argv)
 	assign.zeroDeltaBuffersCPU();
 	assign.zeroDeltaBuffersGPU();
 
-	assign.feedForwardCPU(0);
-	assign.feedForwardGPU(0, 1);
+	for (int i = 0; i < 60; i++) {
+		assign.feedForwardCPU(i);
+		assign.gradientDescentCPU(i);
+	}
 
-	assign.gradientDescentCPU(0);
-	assign.gradientDescentGPU(0, 1);
+	assign.feedForwardGPU(0, 60);
+	assign.gradientDescentGPU(0, 60);
+
+	assign.printDeltaBufferOutputLayerCPU();
+	assign.printDeltaBufferOutputLayerGPU();
 
 ///////////////////////////////////////////////////////////
 

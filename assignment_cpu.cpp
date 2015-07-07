@@ -280,15 +280,9 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 				input = this->h_partialResults[hiddenLayers.size()-1][j]; 
 			}
 			//write back. Keep in mind that the delta buffer is organized like the weight buffer
-			this->h_deltaUpdates.back()[j * this->trainingData->numberOfOutputs + i] = delta * input;
+			this->h_deltaUpdates.back()[j * this->trainingData->numberOfOutputs + i] += delta * input;
 		}
 	}
-
-	std::cout << "Deltas of output Layer (CPU): ";
-	for (int i = 0; i < this->sizeOfWeightBuffer.back(); i++) {
-		std::cout << this->h_deltaUpdates.back()[i] << " ";
-	}
-	std::cout << std::endl;
 
 	//compute deltas for the hidden layers
 	int numNeuronsNextLayer = this->trainingData->numberOfOutputs;
@@ -326,7 +320,7 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 						input = this->h_partialResults[i-1][k];
 					}
 				}
-				this->h_deltaUpdates[i][k * this->hiddenLayers[i] + j] = delta * input;
+				this->h_deltaUpdates[i][k * this->hiddenLayers[i] + j] += delta * input;
 			}		
 		}
 		//set number of neurons for the next layer
@@ -352,6 +346,14 @@ void Assignment::zeroDeltaBuffersCPU() {
 			this->h_deltaUpdates[i][j] = 0.0f;
 		}
 	}
+}
+
+void  Assignment::printDeltaBufferOutputLayerCPU() {
+	std::cout << "Deltas of output Layer (CPU): ";
+	for (int i = 0; i < this->sizeOfWeightBuffer.back(); i++) {
+		std::cout << this->h_deltaUpdates.back()[i] << " ";
+	}
+	std::cout << std::endl;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

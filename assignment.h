@@ -104,7 +104,7 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
-		const unsigned int parallelBackpropagationSize = 50;
+		const unsigned int parallelBackpropagationSize = 60;
 
 		const int localGroupSize = 128;
 
@@ -192,4 +192,7 @@ class Assignment {
 		//the output is saved in the temporary buffer buf2
 		///////////////////////////////////////////////////////////////////////////////
 		float feedForwardCPU(unsigned int indexOfInput);
+
+		void printDeltaBufferOutputLayerCPU();
+		void printDeltaBufferOutputLayerGPU();
 };

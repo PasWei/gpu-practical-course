@@ -264,7 +264,10 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 	);
 	V_RETURN_CL(clError, "Error executing gradientDescentOutputLayerKernel!");
 
-	//read back the result and print it
+	//now the hideen layers
+}
+
+void Assignment::printDeltaBufferOutputLayerGPU() {
 	//get buffer of right size:
 	float* tmpBuff = new float[this->sizeOfWeightBuffer.back()];
 
@@ -292,8 +295,6 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 
 	//delte buffer
 	delete[] tmpBuff;
-
-	//now the hideen layers
 }
 
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
