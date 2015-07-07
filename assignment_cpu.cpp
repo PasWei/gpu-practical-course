@@ -104,12 +104,14 @@ void Assignment::initWeightBuffer() {
 	std::cout << "outputlayer (layer " << this->h_weightBuffers.size()-1 << ") has " <<
 		this->sizeOfWeightBuffer.back() << " weights" << std::endl;
 
-	//init the temp buffer for feedForward partial results and backPropagation delta updates 
+	//init the temp buffer for feedForward partial results and backPropagation deltas 
 	for (unsigned int i = 0; i < this->hiddenLayers.size(); i++) {
 		this->h_partialResults.push_back(new float[this->hiddenLayers[i]]);
+		this->h_deltaBuffer.push_back(new float[this->hiddenLayers[i]]);
 	}
 	//dont forget the output layer also has output and deltas
 	this->h_partialResults.push_back(new float[this->trainingData->numberOfOutputs]);
+	this->h_deltaBuffer.push_back(new float[this->trainingData->numberOfOutputs]);
 
 	//init the deltaUpdates buffer
 	for (unsigned int i = 0; i < this->sizeOfWeightBuffer.size(); i++) {
@@ -249,7 +251,8 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		std::cout << this->h_partialResults.back()[i] << " "; 
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
+	std::cout << "crossEntropy: " << crossEntropy << std::endl;*/
 	
 	return crossEntropy;
 }
@@ -265,11 +268,12 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 	//compute index in label buffer
 	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
 	int inputIndex = this->trainingData->numberOfInputs * indexOfInput;
-	
+
 	//compute deltas for the output layer
 	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
 		//compute the delta
 		float delta = this->trainingLabelBuffer[labelIndex + i] - h_partialResults.back()[i];
+		this->h_deltaBuffer.back()[i] = delta;
 		float input;
 		//iterate over all inputs
 		for (int j = 0; j < hiddenLayers.back() + 1; j++) {
@@ -300,12 +304,13 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 			float delta = 0.0f;
 			//get the first part of the derivative 
 			for (int k = 0; k < numNeuronsNextLayer; k++) {
-				delta += this->h_deltaUpdates[i+1][k] * h_weightBuffers[i+1][k * this->hiddenLayers[i] + j];
+				delta += this->h_deltaBuffer[i+1][k] * this->h_weightBuffers[i+1][k * numNeuronsNextLayer + j];
 			}		
 
 			//the second part of the derivative
 			delta *= this->h_partialResults[i][j] * (1.0f - this->h_partialResults[i][j]);
-		
+			//save the delta
+			this->h_deltaBuffer[i][j] = delta;
 			//get the right input and write into the deltaUpdates buffer
 			//iterate over the inputs (dont forget the constant input)
 			float input;
@@ -315,7 +320,7 @@ void Assignment::gradientDescentCPU(unsigned int indexOfInput) {
 					input = 1.0f;
 				} else {
 					if (i == 0) {
-						input = this->trainingInputBuffer[inputIndex + i];
+						input = this->trainingInputBuffer[inputIndex + k];
 					} else {
 						input = this->h_partialResults[i-1][k];
 					}
@@ -334,7 +339,7 @@ void Assignment::updateWeightsCPU() {
 	for (unsigned int i = 0; i < this->h_deltaUpdates.size(); i++) {
 		//iterate over all weights
 		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
-			this->h_weightBuffers[i][j] += this->h_deltaUpdates[i][j];
+			this->h_weightBuffers[i][j] += this->h_deltaUpdates[i][j] * this->learningRate;
 		}
 	}
 }
@@ -514,6 +519,7 @@ Assignment::~Assignment() {
 	for (unsigned int i = 0; i < this->hiddenLayers.size() + 1; i++) {
 		delete[] this->h_partialResults[i];
 		delete[] this->h_deltaUpdates[i];
+		delete[] this->h_deltaBuffer[i];
 	}
 
 }

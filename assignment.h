@@ -104,6 +104,9 @@ class Assignment {
 		//pointers to the delta results of back propagation - one per layer
 		std::vector<float*> h_deltaUpdates;
 
+		//pointers to the deltas of back propagation - one per layer
+		std::vector<float*> h_deltaBuffer;
+
 		const unsigned int parallelBackpropagationSize = 60;
 
 		const int localGroupSize = 128;
@@ -122,6 +125,7 @@ class Assignment {
 		cl_kernel h_softMaxKernel;
 		cl_kernel h_zeroBufferKernel;
 		cl_kernel h_gradientDescentOutputLayerKernel;
+		cl_kernel h_gradientDescentHiddenLayerKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
@@ -137,7 +141,7 @@ class Assignment {
 		std::vector<cl_mem> d_deltaUpdates;
 
 		//learning rate
-		const float learningRate = 0.0001;
+		const float learningRate = 0.001;
 
 		/////////////////////////////////////////////////////////////////////////////////
 		// This function parses all the cmd arguments into member variables for later use
@@ -195,4 +199,6 @@ class Assignment {
 
 		void printDeltaBufferOutputLayerCPU();
 		void printDeltaBufferOutputLayerGPU();
+
+		void compareDeltaBuffers();
 };

@@ -123,22 +123,17 @@ __kernel void zeroBuffer(__global float* buffer, uint len) {
 
 }
 
+//atomic add function fo float
 inline void AtomicAddFloat(volatile __global float *source, const float operand) {
     union {
         unsigned int intVal;
         float floatVal;
-    } newVal;
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } prevVal;
+    } newVal, prevVal;
     do {
         prevVal.floatVal = *source;
         newVal.floatVal = prevVal.floatVal + operand;
-    } while (
-		atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) !=
-		prevVal.intVal
-	);
+    } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) !=
+		prevVal.intVal);
 }
 
 __kernel void gradientDescentOutputLayer(
@@ -199,22 +194,79 @@ __kernel void gradientDescentOutputLayer(
 			}
 			//write changes to the delta buffer
 			AtomicAddFloat(&deltaUpdateBuffer[i * numberOfNeurons + neuronNumber], delta * input);
-			//deltaUpdateBuffer[i * numberOfNeurons + neuronNumber] += delta * input;
+			//deltaUpdateBuffer[i * numberOfNeurons + neuronNumber] += /*delta */ input;
 		}
 	}
 }
 
 __kernel void gradientDescentHiddenLayer(
-	const __global float* weightBuffer,
-	const __global float* neuronInputBuffer,
-	const __global float* neuronOutputBuffer,
-	__global float* deltaUpdateBuffer,
-	const uint inputSize,
-	const uint numberOfNeurons,
-	const uint threadsPerInputVector,
-	const uint inputBufferOffset,
-	__local float* inputCache
+/*0*/const __global float* weightBufferHigherLayer,
+/*1*/const __global float* neuronInputBuffer,
+/*2*/const __global float* neuronOutputBuffer,
+/*3*/const __global float* deltaUpdateBufferHigherLayer,
+/*4*/__global float* deltaUpdateBuffer,
+/*5*/const uint numberOfInputs,
+/*6*/const uint numberOfNeurons,
+/*7*/const uint numberOfNeuronsHigherLayer,
+/*8*/const uint threadsPerInputVector,
+/*9*/const uint inputBufferOffset,
+/*10*/__local float* inputCache
 	)
 {
+	//get IDs
+	uint GID = get_global_id(0);
+	uint LID = get_local_id(0);
 
+	//for wich input vector does the thread work?
+	uint inputVectorNumber = GID / threadsPerInputVector;
+	uint neuronNumber = GID - threadsPerInputVector * inputVectorNumber;
+
+	//get the information for addressing the input vector and cache
+	uint localWorkgroupSize = get_local_size(0);
+	uint stillToRead = numberOfInputs;
+	uint cacheOffset = 0;
+
+	//read the input vector into the cache
+	while (localWorkgroupSize <= stillToRead) {
+		inputCache[cacheOffset + LID] = neuronInputBuffer[LID + cacheOffset + inputBufferOffset +
+			inputVectorNumber * numberOfInputs];
+		cacheOffset = cacheOffset + localWorkgroupSize;
+		stillToRead = stillToRead - localWorkgroupSize;
+	}
+
+	if (LID < stillToRead) {
+		inputCache[cacheOffset + LID] = neuronInputBuffer[LID + cacheOffset + inputBufferOffset +
+			inputVectorNumber * numberOfInputs];
+	} 
+
+	//wait for the threads to fill the cache
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	//calculate the deltas for the deltaUpdates buffer
+	if (neuronNumber < numberOfNeurons) {
+		//calculate the delta value
+		float delta = 0.0f;
+		//calculate the first part of the delta:
+		for (int i = 0; i < numberOfNeuronsHigherLayer; i++) {
+			delta += deltaUpdateBufferHigherLayer[i * numberOfNeuronsHigherLayer + neuronNumber] *
+				weightBufferHigherLayer[i * numberOfNeuronsHigherLayer + neuronNumber];	
+		}
+		//the second part
+		float tmp = neuronOutputBuffer[inputVectorNumber * numberOfNeurons + neuronNumber];
+		delta *= tmp * (1.0f - tmp);
+		
+		//add deltas to the buffers
+		float input;
+		for (int i = 0; i < numberOfInputs + 1; i++) {
+			//get the right input
+			if (i == numberOfInputs) {
+				input = 1.0f;
+			} else {
+				input = inputCache[i];
+			}
+			//write changes to the delta buffer
+			AtomicAddFloat(&deltaUpdateBuffer[i * numberOfNeurons + neuronNumber], delta * input);
+			//deltaUpdateBuffer[i * numberOfNeurons + neuronNumber] += delta * input;
+		}
+	}
 }

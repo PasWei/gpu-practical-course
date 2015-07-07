@@ -105,6 +105,9 @@ bool Assignment::InitCLResources() {
 	h_gradientDescentOutputLayerKernel = clCreateKernel(this->h_Program, "gradientDescentOutputLayer", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: gradientDescentOutputLayer.");
 
+	h_gradientDescentHiddenLayerKernel = clCreateKernel(this->h_Program, "gradientDescentHiddenLayer", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: gradientDescentHiddenLayer.");
+
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
 	return true;
@@ -114,19 +117,10 @@ void Assignment::zeroDeltaBuffersGPU() {
 	
 	cl_int clError;
 
-	//determine the number of neurons
-	int numNeurons;
-
+	//the length of the delta buffer
 	int bufferLength;
 
 	for (unsigned int i = 0; i < this->d_deltaUpdates.size(); i++) {
-		//get the number of neurons
-		if (i == this->d_deltaUpdates.size() - 1) {
-			numNeurons = this->trainingData->numberOfOutputs;
-		} else {
-			numNeurons = this->hiddenLayers[i];
-		} 
-
 		//set arguments
 		//Argument 0: the buffer to write zeroes into
 		clError = clSetKernelArg(h_zeroBufferKernel, 0, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i]);
@@ -201,14 +195,14 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 
 	//compute index in label buffer
 	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
-	//int inputIndex = this->trainingData->numberOfInputs * indexOfInput;	
+	int inputIndex = this->trainingData->numberOfInputs * indexOfInput;	
 
 	//the output layer first
 	//Argument 0: the label buffer
 	clError = clSetKernelArg(
 		h_gradientDescentOutputLayerKernel, 0, sizeof(cl_mem), (void*)&this->d_trainingLabelBuffer);
 	//Argument 1: the input buffer for the output layer
-	clError = clSetKernelArg(
+	clError |= clSetKernelArg(
 			h_gradientDescentOutputLayerKernel,
 			1,
 			sizeof(cl_mem),
@@ -265,6 +259,117 @@ void Assignment::gradientDescentGPU(unsigned int indexOfInput, unsigned int numI
 	V_RETURN_CL(clError, "Error executing gradientDescentOutputLayerKernel!");
 
 	//now the hideen layers
+	for (int i = this->hiddenLayers.size()-1; i >= 0; i--) {
+		//Argument 0: the weight buffer of the layer above
+		clError = clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 0, sizeof(cl_mem), (void*)&this->d_weightBuffers[i+1]);
+		//Argument 1: the input buffer
+		if (i == 0) {
+			clError |= clSetKernelArg(
+				h_gradientDescentHiddenLayerKernel, 1, sizeof(cl_mem), (void*)&this->d_trainingInputBuffer);
+		} else {
+			clError |= clSetKernelArg(
+				h_gradientDescentHiddenLayerKernel, 1, sizeof(cl_mem), (void*)&this->d_partialResults[i-1]);
+		}
+		//Argument 2: the output buffer of this layer
+		clError |= clSetKernelArg(
+				h_gradientDescentHiddenLayerKernel, 2, sizeof(cl_mem), (void*)&this->d_partialResults[i]);
+		//Argument 3: the delta buffer of the layer above
+		clError = clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 3, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i+1]);
+		//Argument 4: the delta buffer of this layer
+		clError = clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 4, sizeof(cl_mem), (void*)&this->d_deltaUpdates[i]);
+		//Argument 5: the number of Inputs
+		int inputSize;
+		int inputBufferOffset;
+		if (i == 0) {
+			inputSize = this->trainingData->numberOfInputs;
+			inputBufferOffset = inputIndex;
+		} else {
+			inputSize = this->hiddenLayers[i-1];
+			inputBufferOffset = 0;
+		}
+		clError |= clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 5, sizeof(cl_int), (void*)&inputSize);
+		//Argument 6: the number of neurons in this layer
+		clError |= clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 6, sizeof(cl_int), (void*)&this->hiddenLayers[i]);
+		//Argument 7: the number of Neurons in the next layer
+		int numNeuronsHigherLayer;
+		if (i == (int) this->hiddenLayers.size()-1) {
+			numNeuronsHigherLayer = this->trainingData->numberOfOutputs;
+		} else {
+			numNeuronsHigherLayer = this->hiddenLayers[i+1];
+		}
+		clError |= clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 7, sizeof(cl_int), (void*)&numNeuronsHigherLayer);
+		//Argument 8: the number of threads per input vector
+		int threadsPerInputVector = this->hiddenLayers[i]/this->localGroupSize;
+		if (this->hiddenLayers[i] % this->localGroupSize != 0) {
+			threadsPerInputVector++;
+		}
+		//inputSize/this->localGroupSize is always a multiple of localGroupSize
+		threadsPerInputVector = threadsPerInputVector*this->localGroupSize;
+		clError |= clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 8, sizeof(cl_int), (void*)&threadsPerInputVector);
+		//Argument 9: offset into the input buffer
+		clError |= clSetKernelArg(
+			h_gradientDescentHiddenLayerKernel, 9, sizeof(cl_int), (void*)&inputBufferOffset);
+		//Argument 10: the input cache
+		clError |= clSetKernelArg(h_gradientDescentHiddenLayerKernel, 10, inputSize * sizeof(cl_float), NULL);
+		V_RETURN_CL(clError, "Failed to set kernel args: gradientDescentOutputLayerKernel");
+
+		//calculate local and global work size
+		size_t LocalWorkSize[3] = {(size_t)this->localGroupSize, 1, 1};
+		size_t GlobalWorkSize = threadsPerInputVector * numInputVectors;
+
+		//launch the kernel
+		clError = clEnqueueNDRangeKernel(
+			this->h_CLCommandQueue, 
+			this->h_gradientDescentHiddenLayerKernel, 
+			1, 
+			NULL, 
+			&GlobalWorkSize, 
+			LocalWorkSize, 
+			0, 
+			NULL, 
+			NULL
+		);
+		V_RETURN_CL(clError, "Error executing gradientDescentOutputLayerKernel!");
+	}
+}
+
+void Assignment::compareDeltaBuffers() {
+	for (unsigned int i = 0; i < this->h_deltaUpdates.size(); i++) {
+		//temp buffer for gpu output
+		float* tmpBuff = new float[this->sizeOfWeightBuffer[i]];
+		
+		V_RETURN_CL(
+			clEnqueueReadBuffer(
+				this->h_CLCommandQueue,
+				this->d_deltaUpdates[i],
+				CL_TRUE,
+				0,
+				this->sizeOfWeightBuffer[i] * sizeof(cl_float),
+				tmpBuff,
+				0,
+				NULL,
+				NULL
+			), 
+			"Error reading data from device!"
+		);
+
+		//compare the buffers
+		std::cout << "differences of delta buffers in layer " << i << ": ";
+		for (int j = 0; j < this->sizeOfWeightBuffer[i]; j++) {
+			std::cout << tmpBuff[j] - this->h_deltaUpdates[i][j] /*<< " (" << tmpBuff[j] << "-" <<
+			this->h_deltaUpdates[i][j] << ")" */<< " ";
+		}
+		std::cout << std::endl;
+
+		delete[] tmpBuff;
+	}
 }
 
 void Assignment::printDeltaBufferOutputLayerGPU() {
@@ -502,6 +607,7 @@ void Assignment::ReleaseClResources() {
 	SAFE_RELEASE_KERNEL(this->h_softMaxKernel);
 	SAFE_RELEASE_KERNEL(this->h_zeroBufferKernel);
 	SAFE_RELEASE_KERNEL(this->h_gradientDescentOutputLayerKernel);
+	SAFE_RELEASE_KERNEL(this->h_gradientDescentHiddenLayerKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);
