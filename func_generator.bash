@@ -3,7 +3,7 @@
 #a training file with data for distinguishing e^x and x^2
 echo "<?xml version=\"1.0\"?>" > $1
 echo "<samples>" >> $1
-echo "</sampleCount>$(($2*2))</sampleCount>" >> $1
+echo "<sampleCount>$(($2*2))</sampleCount>" >> $1
 echo "<sampleInputCount>2</sampleInputCount>" >> $1
 echo "<sampleOutputCount>2</sampleOutputCount>" >> $1
 echo "<!-- the first samples are x^2 -->" >> $1

@@ -81,7 +81,7 @@ data: ./data/train-images-idx3-ubyte 	\
 
 ./data/func.xml: func_generator.bash
 	chmod +x ./func_generator.bash
-	./func_generator.bash ./data/func.xml 2
+	./func_generator.bash ./data/func.xml 100
 
 # downloads the MNIST data set and puts the files in directory "data"
 # the first few digits: 5 0 4 1 9 2 1 3 1 4
@@ -115,7 +115,6 @@ data: ./data/train-images-idx3-ubyte 	\
 clean_prog:
 	rm -f $(OUTPUT_NAME)
 	rm -f *.o
-	rm -f assignment
 
 clean:
 	rm -f $(OUTPUT_NAME)
@@ -123,4 +122,3 @@ clean:
 	rm -fr include/tinyxml2
 	rm -fr data
 	rm -f *.o
-	rm -f assignment
