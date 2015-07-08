@@ -548,8 +548,14 @@ void Assignment::scheduleTask() {
 		case BACKPROP_STOCH_CPU:
 			StochasticBackPropagateTaskCPU(this->numEpochs);
 			break;
+		case BACKPROP_STOCH_GPU:
+			StochasticBackPropagateTaskGPU(this->numEpochs);
+			break;
 		case BACKPROP_BATCH_CPU:
 			batchBackPropagateTaskCPU(this->numEpochs, this->batchSize);
+			break;
+		case BACKPROP_BATCH_GPU:
+			batchBackPropagateTaskGPU(this->numEpochs, this->batchSize);
 			break;
 		default:
 			std::cout << "something went very wrong with the enum" << std::endl;

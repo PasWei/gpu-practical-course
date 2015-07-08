@@ -302,12 +302,16 @@ class Assignment {
 		void feedForwardTaskGPU();
 
 		void StochasticBackPropagateTaskCPU(unsigned int numEpochs);
+		void StochasticBackPropagateTaskGPU(unsigned int numEpochs);
 		
 		void batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int batchSize);
 
 		void calculateCrossEntropyGPU(unsigned int indexOfInput,  unsigned int numInputVectors);
 
 		void printFeedForwardResultGPU(unsigned int numInputVectors);
+
+		void batchBackPropagateTaskGPU(unsigned int numEpochs, unsigned int batchSize);
+		double calculateBackPropForBatch(unsigned int startIndex, unsigned int batchSize);
 
 		void zeroCrossEntropyGPU();
 	

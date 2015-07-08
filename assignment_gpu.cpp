@@ -710,7 +710,7 @@ void Assignment::feedForwardTaskGPU() {
 	std::cout << "You have selected the feed forward task on the GPU." << std::endl;
 	std::cout << "Will now feed forward " << this->parallelBackpropagationSize <<
 		" samples in parallel using a local group size of " << this->localGroupSize <<
-		", stop the time" << " and accumulate the crossEntropy error." << std::endl;
+		", stop the time and accumulate the crossEntropy error." << std::endl;
 	
 	CTimer timer;
 	double crossEntropy = 0.0;
@@ -740,6 +740,134 @@ void Assignment::feedForwardTaskGPU() {
 	ReleaseClResources();
 
 	ReleaseCLContext();
+}
+
+void Assignment::StochasticBackPropagateTaskGPU(unsigned int numEpochs) {
+	InitCLContext();
+
+	InitCLResources();
+
+	std::cout << std::endl;
+	std::cout << "You have selected the back propagation task on the GPU " << 
+		"using stochastic gradient descent." << std::endl;
+	std::cout << "The neuronal network will now train " << this->trainingData->numberOfSamples <<
+		" samples for " << numEpochs << " epochs with a learning rate of " <<
+		this->learningRate << " using a local group size of " << this->localGroupSize <<
+		" and stop the time." << std::endl;
+	
+	CTimer timer;
+
+	timer.Start();
+	for (unsigned int j = 0; j < numEpochs; j++) {
+		std::cout << "Starting with epoch " << j << std::endl;
+		double crossEntropy = 0.0f;
+		
+		zeroCrossEntropyGPU();
+		for (unsigned int i = 0; i < this->trainingData->numberOfSamples; i++) {
+			zeroDeltaBuffersGPU();
+			feedForwardGPU(i, 1);
+			calculateCrossEntropyGPU(i, 1);
+			gradientDescentGPU(i, 1);
+			updateWeightsGPU();
+			if ( i % 100 == 0) {
+				crossEntropy += readCrossEntropyGPU();
+				zeroCrossEntropyGPU();
+			}
+		}
+		crossEntropy += readCrossEntropyGPU();
+
+		std::cout << "Done." << std::endl;
+		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
+	}
+	timer.Stop();
+
+	std::cout << "Done with back propagation (stochastic)." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
+
+	ReleaseClResources();
+
+	ReleaseCLContext();
+}
+
+void Assignment::batchBackPropagateTaskGPU(unsigned int numEpochs, unsigned int batchSize) {
+
+	InitCLContext();
+
+	InitCLResources();
+
+	std::cout << std::endl;
+	std::cout << "You have selected the back propagation task on the GPU " << 
+		"using batch gradient descent with a batch size of " << batchSize << "." << std::endl;
+	std::cout << "The gpu will use local group size of " << this->localGroupSize <<
+		" and try to evaluate " << this->parallelBackpropagationSize << " inputs at once." << std::endl;
+	std::cout << "The neuronal network will now train " << this->trainingData->numberOfSamples <<
+		" samples for " << numEpochs << " epochs with a learning rate of " << this->learningRate <<
+		" and stop the time." << std::endl;
+	
+	CTimer timer;
+	timer.Start();
+	int fullBatches = this->trainingData->numberOfSamples / batchSize;
+	int lastBatchSize = this->trainingData->numberOfSamples % batchSize;
+	//iterate over epochs
+	for (unsigned int i = 0; i < numEpochs; i++) {
+		std::cout << "Starting with epoch " << i << std::endl;
+		double crossEntropy = 0.0;
+		//iterate over batches
+		for (int j = 0; j < fullBatches; j++) {
+			crossEntropy += calculateBackPropForBatch(j * batchSize, batchSize);
+		}
+		//do the last small batch
+		if (lastBatchSize > 0) {
+			crossEntropy += calculateBackPropForBatch(fullBatches * batchSize, lastBatchSize);
+		}
+
+		std::cout << "Done." << std::endl;
+		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
+	}
+	timer.Stop();
+
+	std::cout << "Done with back propagation (batch)." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
+
+	ReleaseClResources();
+
+	ReleaseCLContext();
+}
+
+double Assignment::calculateBackPropForBatch(unsigned int startIndex, unsigned int batchSize) {
+	double crossEntropy = 0.0;
+	int fullEvaluations = batchSize / this->parallelBackpropagationSize;
+	int lastEvalSize = batchSize % this->parallelBackpropagationSize;
+
+	zeroDeltaBuffersGPU();
+	//evaluate the first part of the batch
+	for (int k = 0; k < fullEvaluations; k++) {
+		zeroCrossEntropyGPU();
+		feedForwardGPU(startIndex + k * this->parallelBackpropagationSize,
+			this->parallelBackpropagationSize);
+		calculateCrossEntropyGPU(startIndex + k * this->parallelBackpropagationSize,
+			this->parallelBackpropagationSize);
+		crossEntropy += readCrossEntropyGPU();
+		gradientDescentGPU(startIndex + k * this->parallelBackpropagationSize,
+			this->parallelBackpropagationSize);
+	}
+	//evaluate the rest of the batch
+	if(lastEvalSize > 0) {
+		zeroCrossEntropyGPU();
+		feedForwardGPU(startIndex + fullEvaluations * this->parallelBackpropagationSize,
+			lastEvalSize);
+		calculateCrossEntropyGPU(startIndex + fullEvaluations * this->parallelBackpropagationSize,
+			lastEvalSize);
+		crossEntropy += readCrossEntropyGPU();
+		gradientDescentGPU(startIndex + fullEvaluations * this->parallelBackpropagationSize,
+			lastEvalSize);
+	}			
+
+	updateWeightsGPU();
+
+	return crossEntropy;
 }
 
 void Assignment::trainGPUTest() {
