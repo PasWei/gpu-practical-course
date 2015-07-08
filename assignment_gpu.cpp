@@ -3,6 +3,7 @@
 #include <utility> //for swap (since c++11)
 
 #include "CLUtil.h"
+#include "CTimer.h"
 #include "assignment.h"
 
 #define PRINT_INFO(title, buffer, bufferSize, maxBufferSize, expr) { expr; buffer[bufferSize] = '\0'; std::cout << title << ": " << buffer << std::endl; }
@@ -108,6 +109,10 @@ bool Assignment::InitCLResources() {
 	);
 	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_deltaBuffer[]");
 
+	//crossEntropy buffer
+	this->d_crossEntropy = clCreateBuffer(this->h_CLContext, CL_MEM_READ_WRITE,	sizeof(float), NULL, &clError);
+	V_RETURN_FALSE_CL(clError, "Error allocating device buffer d_crossEntropy");
+
 	//load and compile kernels
 	std::string programCode;
 	//size_t programSize = 0;
@@ -134,6 +139,9 @@ bool Assignment::InitCLResources() {
 
 	h_updateWeightsGPUKernel = clCreateKernel(this->h_Program, "updateWeights", &clError);
 	V_RETURN_FALSE_CL(clError, "Failed to create kernel: updateWeights.");
+
+	h_calculateCrossEntropyKernel = clCreateKernel(this->h_Program, "calculateCrossEntropy", &clError);
+	V_RETURN_FALSE_CL(clError, "Failed to create kernel: calculateCrossEntropy.");
 
 	//set kernel arguments: cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value
 
@@ -440,6 +448,78 @@ void Assignment::printDeltaBufferOutputLayerGPU() {
 	delete[] tmpBuff;
 }
 
+void Assignment::calculateCrossEntropyGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
+	
+	cl_int clError;
+
+	int labelIndex = indexOfInput * this->trainingData->numberOfOutputs;
+	//Argument 0: the weight buffer
+	clError = clSetKernelArg(
+		h_calculateCrossEntropyKernel, 0, sizeof(cl_mem), (void*)&this->d_trainingLabelBuffer);
+	//Argument 1: the result of the feed forward pass
+	clError |= clSetKernelArg(
+		h_calculateCrossEntropyKernel, 1, sizeof(cl_mem), (void*)&this->d_partialResults.back());
+	//Argument 2: the crossEntropy buffer
+	clError |= clSetKernelArg(
+		h_calculateCrossEntropyKernel, 2, sizeof(cl_mem), (void*)&this->d_crossEntropy);
+	//Argument 3: the label buffer offset
+	clError |= clSetKernelArg(
+		h_calculateCrossEntropyKernel, 3, sizeof(cl_int), (void*)&labelIndex);
+	//Argument 4: the number of outputs
+	clError |= clSetKernelArg(
+		h_calculateCrossEntropyKernel, 4, sizeof(cl_int), (void*)&this->trainingData->numberOfOutputs);
+	V_RETURN_CL(clError, "Failed to set kernel args: calculateCrossEntropyKernel");	
+
+	//calculate local and global work size
+	size_t LocalWorkSize[3] = {(size_t)numInputVectors, 1, 1};
+	size_t GlobalWorkSize = numInputVectors;
+
+	//launch the kernel
+	clError = clEnqueueNDRangeKernel(
+		this->h_CLCommandQueue, 
+		this->h_calculateCrossEntropyKernel, 
+		1, 
+		NULL, 
+		&GlobalWorkSize, 
+		LocalWorkSize, 
+		0, 
+		NULL, 
+		NULL
+	);
+	V_RETURN_CL(clError, "Error executing calculateCrossEntropyKernel!");
+}
+
+float Assignment::readCrossEntropyGPU() {
+	float crossEntropy;
+	clEnqueueReadBuffer(
+			this->h_CLCommandQueue,
+			this->d_crossEntropy,
+			CL_TRUE,
+			0,
+			sizeof(cl_float),
+			&crossEntropy,
+			0,
+			NULL,
+			NULL
+	);
+	return crossEntropy;
+}
+
+void Assignment::zeroCrossEntropyGPU() {
+	float crossEntropy = 0.0f;
+	clEnqueueWriteBuffer(
+			this->h_CLCommandQueue,
+			this->d_crossEntropy,
+			CL_TRUE,
+			0,
+			sizeof(cl_float),
+			&crossEntropy,
+			0,
+			NULL,
+			NULL
+	);
+}
+
 void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInputVectors) {
 	
 	if (numInputVectors > this->parallelBackpropagationSize) {
@@ -589,9 +669,11 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 			NULL
 		);
 	V_RETURN_CL(clError, "Error executing feedForwardKernel!");
+}
 
+void Assignment::printFeedForwardResultGPU(unsigned int numInputVectors) {
 	//read back the result and print it
-	/*float* tmpBuf = new float[this->trainingData->numberOfOutputs];
+	float* tmpBuf = new float[this->trainingData->numberOfOutputs * numInputVectors];
 
 	V_RETURN_CL(
 		clEnqueueReadBuffer(
@@ -599,7 +681,7 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 			this->d_partialResults.back(),
 			CL_TRUE,
 			0 * sizeof(cl_float),
-			this->trainingData->numberOfOutputs * sizeof(cl_float),
+			this->trainingData->numberOfOutputs * sizeof(cl_float) * numInputVectors,
 			tmpBuf,
 			0,
 			NULL,
@@ -608,24 +690,56 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 		"Error reading data from device!"
 	);
 
-	float crossEntropy = 0.0f;
-
-	//compute the output
-	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
-		this->h_partialResults.back()[i] = std::exp(this->h_partialResults.back()[i])/expSum;
-		float target = this->trainingLabelBuffer[labelIndex + i];
-		float output = this->h_partialResults.back()[i];
-		crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
-	}
-
 	//output the values
 	std::cout << "Output of the neuronal network (GPU): ";
-	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs; i++) {
+	for (unsigned int i = 0; i < this->trainingData->numberOfOutputs * numInputVectors; i++) {
 		std::cout << tmpBuf[i] << " "; 
 	}
 	std::cout << std::endl;
 
-	delete[] tmpBuf;*/
+	delete[] tmpBuf;
+}
+
+void Assignment::feedForwardTaskGPU() {
+
+	InitCLContext();
+
+	InitCLResources();
+
+	std::cout << std::endl;
+	std::cout << "You have selected the feed forward task on the GPU." << std::endl;
+	std::cout << "Will now feed forward " << this->parallelBackpropagationSize <<
+		" samples in parallel using a local group size of " << this->localGroupSize <<
+		", stop the time" << " and accumulate the crossEntropy error." << std::endl;
+	
+	CTimer timer;
+	double crossEntropy = 0.0;
+
+	timer.Start();
+	int fullBatches = this->trainingData->numberOfSamples / this->parallelBackpropagationSize;
+	int lastBatchSize = this->trainingData->numberOfSamples % this->parallelBackpropagationSize;
+	for (int i = 0; i < fullBatches; i++) {
+		zeroCrossEntropyGPU();
+		feedForwardGPU(i * this->parallelBackpropagationSize, this->parallelBackpropagationSize);
+		//printFeedForwardResultGPU(this->parallelBackpropagationSize);
+		calculateCrossEntropyGPU(i * this->parallelBackpropagationSize, this->parallelBackpropagationSize);
+		crossEntropy += readCrossEntropyGPU();
+	}
+	if (lastBatchSize > 0) {
+		feedForwardGPU(fullBatches * this->parallelBackpropagationSize, lastBatchSize);
+		calculateCrossEntropyGPU(fullBatches * this->parallelBackpropagationSize, lastBatchSize);
+	}
+	crossEntropy += readCrossEntropyGPU();
+	timer.Stop();
+
+	std::cout << "done." << std::endl;
+	std::cout << "The crossEntropy error is " << crossEntropy << "." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
+
+	ReleaseClResources();
+
+	ReleaseCLContext();
 }
 
 void Assignment::trainGPUTest() {
@@ -633,9 +747,12 @@ void Assignment::trainGPUTest() {
 	//10 parallel backprobs
 	for ( int i = 0; i < 1000; i++) { //epochs
 		float crossEntropy = 0.0f;
+		float cr2 = 0.0f;
 		for (int j = 0; j < 100; j++) { //size of epoch
 			zeroDeltaBuffersGPU();
+			zeroCrossEntropyGPU();
 			feedForwardGPU(j, 1);
+			calculateCrossEntropyGPU(j, 1);
 			gradientDescentGPU(j, 1);
 			updateWeightsGPU();
 
@@ -663,9 +780,12 @@ void Assignment::trainGPUTest() {
 				crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
 			}
 
+			cr2 += readCrossEntropyGPU();
+
 			delete[] tmpBuff;
 		} 
-		std::cout << "crossEntropy: " << crossEntropy << std::endl;
+		std::cout << "crossEntropy calculated on cpu: " << crossEntropy << std::endl;
+		std::cout << "crossEntropy calculated on Gpu: " << cr2 << std::endl;
 	}
 }
 
@@ -713,6 +833,7 @@ void Assignment::ReleaseClResources() {
 	//release buffers
 	SAFE_RELEASE_MEMOBJECT(d_trainingInputBuffer);
 	SAFE_RELEASE_MEMOBJECT(d_trainingLabelBuffer);
+	SAFE_RELEASE_MEMOBJECT(d_crossEntropy);
 	for (unsigned int i = 0; i < this->d_weightBuffers.size(); i++) {
 		SAFE_RELEASE_MEMOBJECT(this->d_weightBuffers[i]);
 		SAFE_RELEASE_MEMOBJECT(this->d_partialResults[i]);
@@ -727,6 +848,7 @@ void Assignment::ReleaseClResources() {
 	SAFE_RELEASE_KERNEL(this->h_gradientDescentOutputLayerKernel);
 	SAFE_RELEASE_KERNEL(this->h_gradientDescentHiddenLayerKernel);
 	SAFE_RELEASE_KERNEL(this->h_updateWeightsGPUKernel);
+	SAFE_RELEASE_KERNEL(this->h_calculateCrossEntropyKernel);
 
 	//release program
 	SAFE_RELEASE_PROGRAM(this->h_Program);

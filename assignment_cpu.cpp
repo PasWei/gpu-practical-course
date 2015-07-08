@@ -244,7 +244,14 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 		this->h_partialResults.back()[i] = std::exp(this->h_partialResults.back()[i])/expSum;
 		float target = this->trainingLabelBuffer[labelIndex + i];
 		float output = this->h_partialResults.back()[i];
-		crossEntropy += -1.0f * (target * std::log(output) + (1.0f - target) * std::log(1.0f - output));
+		float out2 = output;
+		if (output > 0.99999f) {
+			out2 = 0.99999f;
+		}
+		if (output < 0.000001f) {
+			out2 = 0.000001f;
+		}
+		crossEntropy += -1.0f * (target * std::log(out2) + (1.0f - target) * std::log(1.0f - out2));
 	}
 
 	//output the values
@@ -535,6 +542,9 @@ void Assignment::scheduleTask() {
 		case FEEDFORWARD_CPU:
 			feedForwardTaskCPU();
 			break;
+		case FEEDFORWARD_GPU:
+			feedForwardTaskGPU();
+			break;
 		case BACKPROP_STOCH_CPU:
 			StochasticBackPropagateTaskCPU(this->numEpochs);
 			break;
@@ -542,7 +552,7 @@ void Assignment::scheduleTask() {
 			batchBackPropagateTaskCPU(this->numEpochs, this->batchSize);
 			break;
 		default:
-			std::cout << "something went very wrong with the enum";
+			std::cout << "something went very wrong with the enum" << std::endl;
 			break;
 	}
 }

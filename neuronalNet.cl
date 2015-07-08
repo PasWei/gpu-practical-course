@@ -288,3 +288,30 @@ __kernel void updateWeights(
 		weightBuffer[GID] += deltaUpdateBuffer[GID] * learningRate;
 	}
 }
+//schedule as many threads as there are input vectors!
+__kernel void calculateCrossEntropy(
+	const __global float* labelBuffer,
+	const __global float* neuronalNetworkResultBuffer,
+	__global float* crossEntropyBuffer,
+	const uint labelBufferOffset,
+	const uint numberOfOutputs
+	)
+{
+	uint GID = get_global_id(0);
+	
+	float crossEntropy = 0.0f;
+	for (int i = 0; i < numberOfOutputs; i++) {
+		float target = labelBuffer[labelBufferOffset + GID * numberOfOutputs + i];
+		float output = neuronalNetworkResultBuffer[GID * numberOfOutputs + i];
+		float out2 = output;
+		if (output > 0.99999f) {
+			out2 = 0.99999f;
+		}
+		if (output < 0.000001f) {
+			out2 = 0.000001f;
+		}
+		crossEntropy += -1.0f * (target * log(out2) + (1.0f - target) * log(1.0f - out2));
+		//AtomicAddFloat(crossEntropyBuffer, out2);
+	}
+	AtomicAddFloat(crossEntropyBuffer, crossEntropy);
+}

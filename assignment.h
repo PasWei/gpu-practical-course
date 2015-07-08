@@ -206,10 +206,14 @@ class Assignment {
 		cl_kernel h_gradientDescentOutputLayerKernel;
 		cl_kernel h_gradientDescentHiddenLayerKernel;
 		cl_kernel h_updateWeightsGPUKernel;
+		cl_kernel h_calculateCrossEntropyKernel;
 
 		//training data 
 		cl_mem d_trainingInputBuffer;
 		cl_mem d_trainingLabelBuffer;
+
+		//crossEntropy buffer
+		cl_mem d_crossEntropy;
 
 		//pointers to the weight buffers on the gpu
 		std::vector<cl_mem> d_weightBuffers;
@@ -295,8 +299,17 @@ class Assignment {
 		void scheduleTask();
 
 		void feedForwardTaskCPU();
+		void feedForwardTaskGPU();
 
 		void StochasticBackPropagateTaskCPU(unsigned int numEpochs);
 		
 		void batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int batchSize);
+
+		void calculateCrossEntropyGPU(unsigned int indexOfInput,  unsigned int numInputVectors);
+
+		void printFeedForwardResultGPU(unsigned int numInputVectors);
+
+		void zeroCrossEntropyGPU();
+	
+		float readCrossEntropyGPU();
 };
