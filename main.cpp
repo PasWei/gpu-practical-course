@@ -12,14 +12,16 @@ int main(int argc, char** argv)
 	std::cout << std::endl;
 
 	Assignment assign (argc, argv);
-	
-	assign.InitCLContext();
 
-	assign.InitCLResources();
+	assign.scheduleTask();
+	
+	//assign.InitCLContext();
+
+	//assign.InitCLResources();
 
 ///////////////////////////////////////////////////////////
 
-	assign.trainGPUTest();
+	//assign.trainGPUTest();
 
 	/*assign.zeroDeltaBuffersCPU();
 	assign.zeroDeltaBuffersGPU();
@@ -46,9 +48,9 @@ int main(int argc, char** argv)
 
 ///////////////////////////////////////////////////////////
 
-	assign.ReleaseClResources();
+	//assign.ReleaseClResources();
 
-	assign.ReleaseCLContext();
+	//assign.ReleaseCLContext();
 
 	std::cout << std::endl;
 

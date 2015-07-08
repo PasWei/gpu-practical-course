@@ -631,8 +631,6 @@ void Assignment::feedForwardGPU(unsigned int indexOfInput,  unsigned int numInpu
 void Assignment::trainGPUTest() {
 	//1000 samples, 
 	//10 parallel backprobs
-	int startInput = 0;
-	int numInputs = 10;
 	for ( int i = 0; i < 1000; i++) { //epochs
 		float crossEntropy = 0.0f;
 		for (int j = 0; j < 100; j++) { //size of epoch

@@ -11,6 +11,7 @@
 #include "tgawriter.h"
 #include "binaryInputData.h"
 #include "xmlInputData.h"
+#include "CTimer.h"
 
 Assignment::Assignment(int argc, char** argv) {
 
@@ -435,7 +436,55 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		true,
 		INPUT_HIDDEN_TYPE_DESC);
 
-	cmd.add(hiddenLayerMultiArg);	
+	cmd.add(hiddenLayerMultiArg);
+
+	std::vector<std::string> allowed;
+	allowed.push_back("BACKPROP_STOCH_CPU");
+	allowed.push_back("BACKPROP_STOCH_GPU");
+	allowed.push_back("BACKPROP_BATCH_CPU");
+	allowed.push_back("BACKPROP_BATCH_GPU");
+	allowed.push_back("FEEDFORWARD_CPU");
+	allowed.push_back("FEEDFORWARD_GPU");
+	TCLAP::ValuesConstraint<std::string> allowedVals(allowed);
+        
+	TCLAP::ValueArg<std::string> taskArg(
+		TASK_SHORT_ARG,
+		TASK_LONG_ARG,
+		TASK_DESC,
+		false,
+		TASK_DEFAULT_TASK,
+		&allowedVals);
+	cmd.add( taskArg );
+
+	TCLAP::ValueArg<int> numEpochsArg(
+		NUM_EPOCHS_SHORT_ARG,
+		NUM_EPOCHS_LONG_ARG,
+		NUM_EPOCHS_DESC,
+		false, //required argument
+		NUM_EPOCHS_DEFAULT_NUMBER, //default value
+		NUM_EPOCHS_TYPE_DESC);
+
+	cmd.add( numEpochsArg );
+
+	TCLAP::ValueArg<int> batchSizeArg(
+		BATCH_SIZE_SHORT_ARG,
+		BATCH_SIZE_LONG_ARG,
+		BATCH_SIZE_DESC,
+		false, //required argument
+		BATCH_SIZE_DEFAULT_NUMBER, //default value
+		BATCH_SIZE_TYPE_DESC);
+
+	cmd.add( batchSizeArg );
+
+	TCLAP::ValueArg<float> learningRateArg(
+		LEARNING_RATE_SHORT_ARG,
+		LEARNING_RATE_LONG_ARG,
+		LEARNING_RATE_DESC,
+		false, //required argument
+		LEARNING_RATE_DEFAULT_VALUE, //default value
+		LEARNING_RATE_TYPE_DESC);
+
+	cmd.add( learningRateArg );
 
 	// Parse the argv array.
 	try {  
@@ -445,7 +494,12 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
 	}
 
+	//read a file
 	if (inputXMLArg.isSet()) {
+		if (inputLabelArg.isSet() || inputDataArg.isSet()) {
+			std::cout << "You have specified multiple data sources. The XML input will" <<
+				" be used and the rest discarded." << std::endl;
+		}
 		//construct the training data object from xml file if the option was specified
 		this->trainingData = new XMLInputData(inputXMLArg.getValue());
 	} else {
@@ -454,7 +508,134 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
 	}
 
+	//the hidden layers
 	this->hiddenLayers = hiddenLayerMultiArg.getValue();
+
+	//the task at hand
+	std::string taskStr = taskArg.getValue();
+	if (taskStr == "BACKPROP_STOCH_CPU") this->task = BACKPROP_STOCH_CPU;
+	else if (taskStr == "BACKPROP_STOCH_GPU") this->task = BACKPROP_STOCH_GPU;
+	else if (taskStr == "BACKPROP_BATCH_CPU") this->task = BACKPROP_BATCH_CPU;
+	else if (taskStr == "BACKPROP_BATCH_GPU") this->task = BACKPROP_BATCH_GPU;
+	else if (taskStr == "FEEDFORWARD_CPU") this->task = FEEDFORWARD_CPU;
+	else this->task = FEEDFORWARD_GPU;
+
+	//the number of epochs
+	this->numEpochs = numEpochsArg.getValue();
+
+	//size of one batch for back propagation
+	this->batchSize = batchSizeArg.getValue();
+
+	//the learning rate
+	this->learningRate = learningRateArg.getValue();
+}
+
+void Assignment::scheduleTask() {
+	switch(this->task) {
+		case FEEDFORWARD_CPU:
+			feedForwardTaskCPU();
+			break;
+		case BACKPROP_STOCH_CPU:
+			StochasticBackPropagateTaskCPU(this->numEpochs);
+			break;
+		case BACKPROP_BATCH_CPU:
+			batchBackPropagateTaskCPU(this->numEpochs, this->batchSize);
+			break;
+		default:
+			std::cout << "something went very wrong with the enum";
+			break;
+	}
+}
+
+void Assignment::feedForwardTaskCPU() {
+	std::cout << std::endl;
+	std::cout << "You have selected the feed forward task on the CPU." << std::endl;
+	std::cout << "Will now feed forward each sample, stop the time" <<
+		" and accumulate the crossEntropy error." << std::endl;
+	
+	double crossEntropy = 0.0f;
+	CTimer timer;
+
+	timer.Start();
+	for (unsigned int i = 0; i < this->trainingData->numberOfSamples; i++) {
+		crossEntropy += feedForwardCPU(i);
+	}
+	timer.Stop();
+
+	std::cout << "done." << std::endl;
+	std::cout << "The crossEntropy error is " << crossEntropy << "." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
+}
+
+void Assignment::StochasticBackPropagateTaskCPU(unsigned int numEpochs) {
+	std::cout << std::endl;
+	std::cout << "You have selected the back propagation task on the CPU " << 
+		"using stochastic gradient descent." << std::endl;
+	std::cout << "The neuronal network will now train " << this->trainingData->numberOfSamples <<
+		" samples for " << numEpochs << " epochs with a learning rate of " <<
+		this->learningRate << " and stop the time." << std::endl;
+	
+	CTimer timer;
+	timer.Start();
+	for (unsigned int i = 0; i < numEpochs; i++) {
+		std::cout << "Starting with epoch " << i << std::endl;
+		double crossEntropy = 0.0f;
+		for (unsigned int j = 0; j < this->trainingData->numberOfSamples; j++) {
+			zeroDeltaBuffersCPU();
+			crossEntropy += feedForwardCPU(j);
+			gradientDescentCPU(j);
+			updateWeightsCPU();
+		}
+		std::cout << "Done." << std::endl;
+		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
+	}
+	timer.Stop();
+
+	std::cout << "Done with back propagation (stochastic)." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
+}
+
+void Assignment::batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int batchSize) {
+	std::cout << std::endl;
+	std::cout << "You have selected the back propagation task on the CPU " << 
+		"using batch gradient descent with a batch size of " << batchSize << "." << std::endl;
+	std::cout << "The neuronal network will now train " << this->trainingData->numberOfSamples <<
+		" samples for " << numEpochs << " epochs with a learning rate of " <<
+		this->learningRate << " and stop the time." << std::endl;
+	
+	CTimer timer;
+	timer.Start();
+	for (unsigned int i = 0; i < numEpochs; i++) {
+		std::cout << "Starting with epoch " << i << std::endl;
+		double crossEntropy = 0.0f;
+		int fullBatches =  this->trainingData->numberOfSamples / batchSize;
+		//full batches			
+		for (int j = 0; j < fullBatches; j++) {
+			zeroDeltaBuffersCPU();
+			for (unsigned int k = 0; k < batchSize; k++) {
+				crossEntropy += feedForwardCPU(j * batchSize + k);
+				gradientDescentCPU(j * batchSize + k);
+			}
+			updateWeightsCPU();
+		}
+		//the last batch is smaller
+		zeroDeltaBuffersCPU();
+		for (unsigned int j = fullBatches * batchSize; j < this->trainingData->numberOfSamples; j++) {
+			crossEntropy += feedForwardCPU(j);
+			gradientDescentCPU(j);
+		}
+		updateWeightsCPU();
+
+		std::cout << "Done." << std::endl;
+		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
+	}
+	timer.Stop();
+
+	std::cout << "Done with back propagation (batch)." << std::endl;
+	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
+		" milliseconds to complete." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////

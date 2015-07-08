@@ -47,7 +47,8 @@
 	#define INPUT_XML_LONG_ARG "input-xml"
 
 	//description
-	#define INPUT_XML_DESC "location of the file containing a data set in xml data format. If this flag is set, it overrides -i and -l"
+	#define INPUT_XML_DESC "location of the file containing a data set in xml data format." \
+		" If this flag is set, it overrides -i and -l"
 
 	//description of the expected format
 	//TODO: expand on the actual file format
@@ -64,13 +65,75 @@
 	#define INPUT_HIDDEN_LONG_ARG "hidden-layer"
 
 	//description
-	#define INPUT_HIDDEN_DESC "number of neurons in a new hidden layer. Can be specified multiple times. The order matters."
+	#define INPUT_HIDDEN_DESC "number of neurons in a new hidden layer." \
+		"Can be specified multiple times. The order matters."
 
 	//description of the actual format
 	#define INPUT_HIDDEN_TYPE_DESC "Name intergers in the order you want to arrange the hidden layers."
 
+//parameter that defines the task at hand
+	//the short arg name
+	#define TASK_SHORT_ARG "t"
 
+	//long arg name
+	#define TASK_LONG_ARG "task"
+	
+	//description
+	//TODO: expand on the possible values
+	#define TASK_DESC "Task that is to be executed"
 
+	//the default value
+	#define TASK_DEFAULT_TASK "FEEDFORWARD_CPU"
+
+//parameter for the number of epochs for backpropagation
+	//the short arg name
+	#define NUM_EPOCHS_SHORT_ARG "e"
+
+	//long arg name
+	#define NUM_EPOCHS_LONG_ARG "number-of-epochs"
+	
+	//description
+	#define NUM_EPOCHS_DESC "The number of epochs that will be traind. " \
+		"One epoch corresponds to one pass of the whole data set."
+
+	//the type description
+	#define NUM_EPOCHS_TYPE_DESC "An unsigned integer."
+
+	//the default value
+	#define NUM_EPOCHS_DEFAULT_NUMBER 100
+
+//parameter for the number of epochs for backpropagation
+	//the short arg name
+	#define BATCH_SIZE_SHORT_ARG "b"
+
+	//long arg name
+	#define BATCH_SIZE_LONG_ARG "size-of-batch"
+	
+	//description
+	#define BATCH_SIZE_DESC "The size of a batch that will be processed " \
+		"at once before the error is back propagated."
+
+	//the type description
+	#define BATCH_SIZE_TYPE_DESC "An unsigned integer."
+
+	//the default value
+	#define BATCH_SIZE_DEFAULT_NUMBER 100
+
+//parameter for the learning rate for back propagation
+	//the short arg name
+	#define LEARNING_RATE_SHORT_ARG "L"
+
+	//long arg name
+	#define LEARNING_RATE_LONG_ARG "learning-rate"
+	
+	//description
+	#define LEARNING_RATE_DESC "The learning rate for back propagation."
+
+	//the type description
+	#define LEARNING_RATE_TYPE_DESC "An unsigned float."
+
+	//the default value
+	#define LEARNING_RATE_DEFAULT_VALUE 0.00001f
 
 #include <stdint.h>
 #include <string>
@@ -78,6 +141,15 @@
 #include <CL/cl.h>
 
 #include "inputData.h"
+
+enum NetworkTask {
+	BACKPROP_STOCH_CPU,
+	BACKPROP_STOCH_GPU,
+	BACKPROP_BATCH_CPU,
+	BACKPROP_BATCH_GPU,
+	FEEDFORWARD_CPU,
+	FEEDFORWARD_GPU
+};
 
 class Assignment {
 
@@ -88,6 +160,9 @@ class Assignment {
 		//TODO: Refactoring: rename with h_
 		float* trainingInputBuffer;
 		float* trainingLabelBuffer;
+
+		//the task that has to be done
+		NetworkTask task;
 
 		//number of hidden layers and number of neurons in each layer
 		std::vector<int> hiddenLayers;
@@ -106,6 +181,10 @@ class Assignment {
 
 		//pointers to the deltas of back propagation - one per layer
 		std::vector<float*> h_deltaBuffer;
+
+		unsigned int numEpochs;
+	
+		unsigned int batchSize;
 
 		const unsigned int parallelBackpropagationSize = 60;
 
@@ -145,7 +224,7 @@ class Assignment {
 		std::vector<cl_mem> d_deltaBuffer;
 
 		//learning rate
-		const float learningRate = 0.001;
+		float learningRate;
 
 		/////////////////////////////////////////////////////////////////////////////////
 		// This function parses all the cmd arguments into member variables for later use
@@ -212,4 +291,12 @@ class Assignment {
 		void printDeltaBufferCPU();
 
 		void trainGPUTest();
+
+		void scheduleTask();
+
+		void feedForwardTaskCPU();
+
+		void StochasticBackPropagateTaskCPU(unsigned int numEpochs);
+		
+		void batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int batchSize);
 };
