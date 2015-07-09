@@ -72,3 +72,5 @@ You can now cross validate any of the traind neuronal networks with the test set
 ./assignment -t FEEDFORWARD_GPU -i ./data/t10k-images-idx3-ubyte -l ./data/t10k-labels-idx1-ubyte -n your-network.net
 
 NOTE: replace "your-network.net" with one of your networks (from above)
+If you want the false classifications to be counted you can use the cpu feed forward implementation
+for this additional output. 
