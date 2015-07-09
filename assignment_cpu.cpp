@@ -65,6 +65,7 @@ Assignment::Assignment(int argc, char** argv) {
 }
 
 void Assignment::writeNetworkToFile(std::string filename) {
+
 	std::ofstream outfile (filename.c_str(),std::ofstream::binary);
 	if(!outfile.fail()) {
 		//write number of layers
@@ -102,7 +103,7 @@ void Assignment::readNetworkFromFile(std::string filename) {
 		//read the number of inputs
 		int numInputs;
 		infile.read((char*) &numInputs, sizeof(int));
-		if(numInputs != this->trainingData->numberOfInputs) {
+		if(numInputs != (int) this->trainingData->numberOfInputs) {
 			std::cout << "The number of inputs of the training data differs from" <<
 			" the number of inputs in the neuronal network!" << std::endl;
 			exit(1); 
@@ -117,7 +118,7 @@ void Assignment::readNetworkFromFile(std::string filename) {
 		//read the output size
 		int numOutputs;
 		infile.read((char*) &numOutputs, sizeof(int));
-		if(numOutputs != this->trainingData->numberOfOutputs) {
+		if(numOutputs != (int) this->trainingData->numberOfOutputs) {
 			std::cout << "The number of outputs of the training data differs from" <<
 				" the number of outputs in the neuronal network!" << std::endl;
 			exit(1); 
@@ -229,7 +230,7 @@ void Assignment::randomizeWeights() {
 ///////////////////////////////////////////////////////////////////////////////
 //computes the output of the neuronal network given an index in the input array
 ///////////////////////////////////////////////////////////////////////////////
-float Assignment::feedForwardCPU(unsigned int indexOfInput) {
+float Assignment::feedForwardCPU(unsigned int indexOfInput, int* missCount) {
 	
 	//is the index valid?
 	if (indexOfInput >= this->trainingData->numberOfSamples) {
@@ -324,6 +325,19 @@ float Assignment::feedForwardCPU(unsigned int indexOfInput) {
 			out2 = 0.000001f;
 		}
 		crossEntropy += -1.0f * (target * std::log(out2) + (1.0f - target) * std::log(1.0f - out2));
+	}
+
+	//calculate if the guess was right:
+	int guess;
+	float max = 0.0;
+	for (int i = 0; i < 10; i++) {
+		//std::cout << this->h_partialResults.back()[i] << " ";
+		if (std::max(max, this->h_partialResults.back()[i]) == this->h_partialResults.back()[i]) {
+			max = this->h_partialResults.back()[i];
+			guess = i;
+		}			
+	} if (this->trainingLabelBuffer[labelIndex + guess] < 0.5f) {
+		*missCount = *missCount + 1;
 	}
 
 	//output the values
@@ -515,8 +529,6 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		true,
 		INPUT_HIDDEN_TYPE_DESC);
 
-	cmd.add(hiddenLayerMultiArg);
-
 	std::vector<std::string> allowed;
 	allowed.push_back("BACKPROP_STOCH_CPU");
 	allowed.push_back("BACKPROP_STOCH_GPU");
@@ -583,7 +595,7 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		NETWORK_LOAD_TYPE_DESC, //default value
 		"");
 
-	cmd.add( networkLoadArg );
+	cmd.xorAdd(networkLoadArg, hiddenLayerMultiArg);
 
 	// Parse the argv array.
 	try {  
@@ -693,13 +705,16 @@ void Assignment::feedForwardTaskCPU() {
 	CTimer timer;
 
 	timer.Start();
+	int missCount = 0;
 	for (unsigned int i = 0; i < this->trainingData->numberOfSamples; i++) {
-		crossEntropy += feedForwardCPU(i);
+		crossEntropy += feedForwardCPU(i, &missCount);
 	}
 	timer.Stop();
 
 	std::cout << "done." << std::endl;
-	std::cout << "The crossEntropy error is " << crossEntropy << "." << std::endl;
+	std::cout << "The crossEntropy error is " << crossEntropy << ". " << missCount <<
+	 " samples where classified wrong (" <<
+	((float) missCount)/((float)this->trainingData->numberOfSamples)*100.0f << "%)." << std::endl;
 	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
 		" milliseconds to complete." << std::endl;
 }
@@ -717,9 +732,10 @@ void Assignment::StochasticBackPropagateTaskCPU(unsigned int numEpochs) {
 	for (unsigned int i = 0; i < numEpochs; i++) {
 		std::cout << "Starting with epoch " << i << std::endl;
 		double crossEntropy = 0.0f;
+		int misClass = 0;
 		for (unsigned int j = 0; j < this->trainingData->numberOfSamples; j++) {
 			zeroDeltaBuffersCPU();
-			crossEntropy += feedForwardCPU(j);
+			crossEntropy += feedForwardCPU(j, &misClass);
 			gradientDescentCPU(j);
 			updateWeightsCPU();
 		}
@@ -746,12 +762,13 @@ void Assignment::batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int 
 	for (unsigned int i = 0; i < numEpochs; i++) {
 		std::cout << "Starting with epoch " << i << std::endl;
 		double crossEntropy = 0.0f;
+		int misClass = 0;
 		int fullBatches =  this->trainingData->numberOfSamples / batchSize;
 		//full batches			
 		for (int j = 0; j < fullBatches; j++) {
 			zeroDeltaBuffersCPU();
 			for (unsigned int k = 0; k < batchSize; k++) {
-				crossEntropy += feedForwardCPU(j * batchSize + k);
+				crossEntropy += feedForwardCPU(j * batchSize + k, &misClass);
 				gradientDescentCPU(j * batchSize + k);
 			}
 			updateWeightsCPU();
@@ -759,7 +776,7 @@ void Assignment::batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int 
 		//the last batch is smaller
 		zeroDeltaBuffersCPU();
 		for (unsigned int j = fullBatches * batchSize; j < this->trainingData->numberOfSamples; j++) {
-			crossEntropy += feedForwardCPU(j);
+			crossEntropy += feedForwardCPU(j, &misClass);
 			gradientDescentCPU(j);
 		}
 		updateWeightsCPU();
@@ -779,7 +796,7 @@ void Assignment::batchBackPropagateTaskCPU(unsigned int numEpochs, unsigned int 
 //epoch: number of samples per epoch
 //numEpochs: number of epochs to train
 ///////////////////////////////////////////////////////////////
-void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs) {
+/*void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs) {
 	
 		std::random_device rd;
 		unsigned int random;
@@ -830,7 +847,7 @@ void Assignment::stochasticGradientDescentCPU(unsigned int epoch, unsigned int n
 			std::cout << std::endl;
 			std::cout << "guess: " << guess << std::endl;
 		}
-}
+}*/
 
 ////////////////////////////////////////////////////////////////
 // Destructor

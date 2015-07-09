@@ -1,0 +1,74 @@
+**this will only work on linux**
+
+Step one:
+	configure the makefile. Alter the definition of OPENCL_INCLUDE_DIRS in line 2
+	and OPENCL_LIBRARIES in line 6 to match your system.
+
+Step two:
+	run "make". Make sure to have an internet connection since the makefile will
+	download some dependencies.
+
+Step three:
+	run "make data". This will download the MNIST data set and produce an example xml
+	data file. These files will be stored in ./data
+
+step four:
+	run "./assingment --help" to get an idea of the programs capabilities. Some of
+	the use cases are showcased below:
+
+
+
+As a first test, just run 
+
+./assignment -H 100 -H 50 -t FEEDFORWARD_CPU
+
+This will generate a new neuronal network with 2 hidden layers of size 100 and 50 and feed forward
+the complete MNIST data set throug the network using the CPU implementation. For this to
+function you need to run "make data" first and not move or rename the MNIST data files.
+If the -l and -t command arguments are not given, the application attempts to load the
+MNIST data files from their default location.
+
+Now you can compare the output to the GPU implementation by running
+ 
+./assignment -H 100 -H 50 -t FEEDFORWARD_GPU
+
+This should give you a first impression of
+the speedup. Try to experiment with different numbers of layers and neurons.
+
+
+
+As a second test, lets generate and save a random neuronal network with the command
+
+./assignment -H 100 -H 50 -t FEEDFORWARD_GPU -s ./nn.net
+
+Then load it again and train it with stochastic gradient descent for 5 epochs on the mnist data
+using the CPU with
+
+./assignment -e 5 -L 0.0001 -t BACKPROP_STOCH_CPU -n nn.net -s ./nn-train-cpu-stoch.net
+
+NOTE: this could take a while since the MNIST data set is rather large. You can reduce
+the number of epochs with the "-e" argument.
+You should see the crossEntropy error shrink throughout the epochs. Now we can compare these results 
+with the GPU implementation of stochastic gradient descent:
+
+./assignment -e 5 -L 0.0001 -t BACKPROP_STOCH_GPU -n nn.net -s ./nn-train-gpu-stoch.net
+
+You will notice that the speedup compared to the cpu implementation is not that great. One reason is that
+the gpu implementation is written to parallelize across neurons. But the number of neurons in this example
+is relatively small (for the task at hand one would normally employ around 1000 neurons at the first
+hidden layer). The other reason is that the GPU is better at batch back propagation since it can work on
+up to 60 inputs in parallel. Lets see how the GPU performs on mini-batch gradient descent using a batch size
+of 600 (thiss will turn on the parallel execution of multiple input vectors):
+
+./assignment -e 5 -L 0.0001 -b 600 -t BACKPROP_BATCH_GPU -n nn.net -s ./nn-train-gpu-batch.net
+
+The speed of the CPU implementation of batch gradient descent should be roughly the same as for
+stochastic gradient descent. You can try anyway with 
+
+./assignment -e 5 -L 0.0001 -b 600 -t BACKPROP_BATCH_CPU -n nn.net -s ./nn-train-cpu-batch.net
+
+You can now cross validate any of the traind neuronal networks with the test set via the following command:
+
+./assignment -t FEEDFORWARD_GPU -i ./data/t10k-images-idx3-ubyte -l ./data/t10k-labels-idx1-ubyte -n your-network.net
+
+NOTE: replace "your-network.net" with one of your networks (from above)

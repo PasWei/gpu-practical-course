@@ -742,6 +742,25 @@ void Assignment::feedForwardTaskGPU() {
 	ReleaseCLContext();
 }
 
+void Assignment::copyWeightBuffersFromDevice() {
+	for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+		V_RETURN_CL(
+			clEnqueueReadBuffer(
+				this->h_CLCommandQueue,
+				this->d_weightBuffers[i],
+				CL_TRUE,
+				0,
+				this->sizeOfWeightBuffer[i] * sizeof(float),
+				this->h_weightBuffers[i],
+				0,
+				NULL,
+				NULL
+			), 
+			"Error reading data from device!"
+		);
+	}
+}
+
 void Assignment::StochasticBackPropagateTaskGPU(unsigned int numEpochs) {
 	InitCLContext();
 
@@ -780,6 +799,8 @@ void Assignment::StochasticBackPropagateTaskGPU(unsigned int numEpochs) {
 		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
 	}
 	timer.Stop();
+
+	copyWeightBuffersFromDevice();
 
 	std::cout << "Done with back propagation (stochastic)." << std::endl;
 	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<
@@ -826,6 +847,8 @@ void Assignment::batchBackPropagateTaskGPU(unsigned int numEpochs, unsigned int 
 		std::cout << "Accumulated crossEntropy error for this epoch: " << crossEntropy << std::endl;
 	}
 	timer.Stop();
+	
+	copyWeightBuffersFromDevice();
 
 	std::cout << "Done with back propagation (batch)." << std::endl;
 	std::cout << "The task took " << timer.GetElapsedMilliseconds() <<

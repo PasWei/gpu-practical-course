@@ -315,13 +315,13 @@ class Assignment {
 		void updateWeightsCPU();
 		void updateWeightsGPU();
 
-		void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);
+		/*void stochasticGradientDescentCPU(unsigned int epoch, unsigned int numEpochs);*/
 		
 		///////////////////////////////////////////////////////////////////////////////
 		//computes the output of the neuronal network given an index in the input array
 		//the output is saved in the temporary buffer buf2
 		///////////////////////////////////////////////////////////////////////////////
-		float feedForwardCPU(unsigned int indexOfInput);
+		float feedForwardCPU(unsigned int indexOfInput, int* missCount);
 
 		void printDeltaBufferOutputLayerCPU();
 		void printDeltaBufferOutputLayerGPU();
@@ -357,4 +357,6 @@ class Assignment {
 
 		void writeNetworkToFile(std::string filename);
 		void readNetworkFromFile(std::string filename);
+
+		void copyWeightBuffersFromDevice();
 };
