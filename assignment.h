@@ -135,6 +135,32 @@
 	//the default value
 	#define LEARNING_RATE_DEFAULT_VALUE 0.00001f
 
+//file name for the neuronal network save
+	//the short arg name
+	#define NETWORK_SAVE_SHORT_ARG "s"
+
+	//long arg name
+	#define NETWORK_SAVE_LONG_ARG "save-network-path"
+	
+	//description
+	#define NETWORK_SAVE_DESC "The file path for storing the neuronal network"
+
+	//the type description
+	#define NETWORK_SAVE_TYPE_DESC "A valid file path."
+
+//file name for the neuronal network load file
+	//the short arg name
+	#define NETWORK_LOAD_SHORT_ARG "n"
+
+	//long arg name
+	#define NETWORK_LOAD_LONG_ARG "load-network-path"
+	
+	//description
+	#define NETWORK_LOAD_DESC "The file path for loading the neuronal network"
+
+	//the type description
+	#define NETWORK_LOAD_TYPE_DESC "A valid file path."
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -163,6 +189,18 @@ class Assignment {
 
 		//the task that has to be done
 		NetworkTask task;
+
+		//the path for saving the network
+		std::string savePath;
+
+		//should a network be loaded?
+		bool saveNet;
+
+		//the path for loading the network
+		std::string loadPath;
+
+		//should the network be saved?
+		bool loadNet;
 
 		//number of hidden layers and number of neurons in each layer
 		std::vector<int> hiddenLayers;
@@ -316,4 +354,7 @@ class Assignment {
 		void zeroCrossEntropyGPU();
 	
 		float readCrossEntropyGPU();
+
+		void writeNetworkToFile(std::string filename);
+		void readNetworkFromFile(std::string filename);
 };

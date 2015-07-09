@@ -34,9 +34,6 @@ Assignment::Assignment(int argc, char** argv) {
 	this->trainingLabelBuffer =
 		new float[this->trainingData->numberOfOutputs * this->trainingData->numberOfSamples];
 	this->trainingData->getLabelBuffer(this->trainingLabelBuffer);
-	
-	this->initWeightBuffer();
-	this->randomizeWeights();
 
 	//this code displays one image from the mnist set as ascii art and the corresponding label	
 
@@ -65,6 +62,81 @@ Assignment::Assignment(int argc, char** argv) {
 
 	}*/
 	
+}
+
+void Assignment::writeNetworkToFile(std::string filename) {
+	std::ofstream outfile (filename.c_str(),std::ofstream::binary);
+	if(!outfile.fail()) {
+		//write number of layers
+		int numLayers = this->hiddenLayers.size() + 1;
+		outfile.write((char*) &numLayers, sizeof(int));
+		//write number of inputs
+		int numInputs = this->trainingData->numberOfInputs;
+		outfile.write((char*) &numInputs, sizeof(int));
+		//write the number of neurons for each hidden layer
+		for (unsigned int i = 0; i < this->hiddenLayers.size(); i++) {
+			int numNeurons = this->hiddenLayers[i];
+			outfile.write((char*) &numNeurons, sizeof(int));
+		}
+		//write number of neurons for output layer
+		int numOutputs = this->trainingData->numberOfOutputs;
+		outfile.write((char*) &numOutputs, sizeof(int));
+		//now write all weight buffers
+		for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+			outfile.write((char*) this->h_weightBuffers[i], this->sizeOfWeightBuffer[i] * sizeof(float));
+		//std::cout << "first float in weightbuffer " << i << ": " << this->h_weightBuffers[i][0] << std::endl;
+		}
+
+		outfile.close();
+	} else {
+		std::cout << "failed to write to " << filename << std::endl;
+	}
+}
+
+void Assignment::readNetworkFromFile(std::string filename) {
+	std::ifstream infile (filename.c_str(),std::ifstream::binary);
+	if(!infile.fail()) {
+		//number of layers
+		int numLayers;
+		infile.read((char*) &numLayers, sizeof(int));
+		//read the number of inputs
+		int numInputs;
+		infile.read((char*) &numInputs, sizeof(int));
+		if(numInputs != this->trainingData->numberOfInputs) {
+			std::cout << "The number of inputs of the training data differs from" <<
+			" the number of inputs in the neuronal network!" << std::endl;
+			exit(1); 
+		}
+		//read the size of the hidden layers
+		for (int i = 0; i < numLayers - 1; i++) {
+			int numHidden;
+			infile.read((char*) &numHidden, sizeof(int));
+			this->hiddenLayers.push_back(numHidden);
+			//std::cout << "hiddenLayers: " << hiddenLayers.back() << std::endl;
+		}
+		//read the output size
+		int numOutputs;
+		infile.read((char*) &numOutputs, sizeof(int));
+		if(numOutputs != this->trainingData->numberOfOutputs) {
+			std::cout << "The number of outputs of the training data differs from" <<
+				" the number of outputs in the neuronal network!" << std::endl;
+			exit(1); 
+		} 
+
+		//init the weight buffers
+		initWeightBuffer();
+
+		//fill the weight buffers
+		for (unsigned int i = 0; i < this->h_weightBuffers.size(); i++) {
+			infile.read((char*) this->h_weightBuffers[i], this->sizeOfWeightBuffer[i] * sizeof(float));
+		//std::cout << "first float in weightbuffer " << i << ": " << this->h_weightBuffers[i][0] << std::endl;
+		}
+
+		infile.close();
+	} else {
+		std::cout << "failed to load network from file! Emergency exit." << std::endl;
+		exit(1);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -493,6 +565,26 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 
 	cmd.add( learningRateArg );
 
+	TCLAP::ValueArg<std::string> networkSaveArg(
+		NETWORK_SAVE_SHORT_ARG,
+		NETWORK_SAVE_LONG_ARG,
+		NETWORK_SAVE_DESC,
+		false, //required argument
+		NETWORK_SAVE_TYPE_DESC, //default value
+		"");
+
+	cmd.add( networkSaveArg );
+	
+	TCLAP::ValueArg<std::string> networkLoadArg(
+		NETWORK_LOAD_SHORT_ARG,
+		NETWORK_LOAD_LONG_ARG,
+		NETWORK_LOAD_DESC,
+		false, //required argument
+		NETWORK_LOAD_TYPE_DESC, //default value
+		"");
+
+	cmd.add( networkLoadArg );
+
 	// Parse the argv array.
 	try {  
 		cmd.parse( argc, argv );
@@ -515,9 +607,6 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 		this->trainingData = new BinaryInputData(inputDataArg.getValue(), inputLabelArg.getValue());
 	}
 
-	//the hidden layers
-	this->hiddenLayers = hiddenLayerMultiArg.getValue();
-
 	//the task at hand
 	std::string taskStr = taskArg.getValue();
 	if (taskStr == "BACKPROP_STOCH_CPU") this->task = BACKPROP_STOCH_CPU;
@@ -535,9 +624,36 @@ void Assignment::parseCMDArgs(int argc, char** argv) {
 
 	//the learning rate
 	this->learningRate = learningRateArg.getValue();
+
+	//saving the neuronal net to file
+	if (networkSaveArg.isSet()) {
+		this->saveNet = true;
+		this->savePath = networkSaveArg.getValue();
+	} else {
+		this->saveNet = false;
+	}
+
+	//loading a network
+	//saving the neuronal net to file
+	if (networkLoadArg.isSet()) {
+		this->loadNet = true;
+		this->loadPath = networkLoadArg.getValue();
+	} else {
+		this->loadNet = false;
+		//the hidden layers
+		this->hiddenLayers = hiddenLayerMultiArg.getValue();
+	}
 }
 
 void Assignment::scheduleTask() {
+
+	if (this->loadNet) {
+		readNetworkFromFile(this->loadPath);
+	} else {
+		this->initWeightBuffer();
+		this->randomizeWeights();
+	}
+
 	switch(this->task) {
 		case FEEDFORWARD_CPU:
 			feedForwardTaskCPU();
@@ -560,6 +676,10 @@ void Assignment::scheduleTask() {
 		default:
 			std::cout << "something went very wrong with the enum" << std::endl;
 			break;
+	}
+	//save the resulting network?
+	if(this->saveNet) {
+		writeNetworkToFile(this->savePath);
 	}
 }
 

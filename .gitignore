@@ -4,3 +4,4 @@ include/tinyxml2
 data
 assignment
 *.o
+*.net
