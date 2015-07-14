@@ -1,0 +1,8 @@
+The task took 115543 milliseconds to complete.
+The task took 234927 milliseconds to complete.
+The task took 352258 milliseconds to complete.
+The task took 470176 milliseconds to complete.
+The task took 587591 milliseconds to complete.
+The task took 711814 milliseconds to complete.
+The task took 850138 milliseconds to complete.
+The task took 960899 milliseconds to complete.

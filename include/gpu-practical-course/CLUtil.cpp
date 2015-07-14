@@ -71,7 +71,7 @@ cl_program CLUtil::BuildCLProgramFromMemory(cl_device_id Device, cl_context Cont
 	// program created, now build it:
 	const char* pCompileOptions = CompileOptions.size() > 0 ? CompileOptions.c_str() : nullptr;
 	clError = clBuildProgram(prog, 1, &Device, pCompileOptions, NULL, NULL);
-	PrintBuildLog(prog, Device);
+	//PrintBuildLog(prog, Device);
 	if(CL_SUCCESS != clError)
 	{
 		cerr<<"Failed to build CL program.";

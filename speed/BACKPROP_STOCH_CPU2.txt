@@ -1,0 +1,12 @@
+The task took 2.77679e+06 milliseconds to complete.
+The task took 3.0022e+06 milliseconds to complete.
+The task took 3.24685e+06 milliseconds to complete.
+The task took 3.49223e+06 milliseconds to complete.
+The task took 3.71762e+06 milliseconds to complete.
+The task took 3.95332e+06 milliseconds to complete.
+The task took 4.0694e+06 milliseconds to complete.
+The task took 4.35947e+06 milliseconds to complete.
+The task took 4.66828e+06 milliseconds to complete.
+The task took 4.91006e+06 milliseconds to complete.
+The task took 4.99008e+06 milliseconds to complete.
+The task took 5.3558e+06 milliseconds to complete.
