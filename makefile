@@ -2,8 +2,8 @@
 OPENCL_INCLUDE_DIRS=/opt/cuda-5.0/include
 
 #Path to the opencl shared library
-#OPENCL_LIBRARIES=/usr/lib64/nvidia-304xx/libOpenCL.so.1
-OPENCL_LIBRARIES=/usr/lib64/libOpenCL.so.1
+OPENCL_LIBRARIES=/usr/lib/x86_64-linux-gnu/libOpenCL.so
+#OPENCL_LIBRARIES=/usr/lib64/libOpenCL.so.1
 
 #make sure to list tinyxml2 after xmlInputDataClass to avoid compiler errors
 #the g++ compiler flag -g compiles debug symbols into the code
